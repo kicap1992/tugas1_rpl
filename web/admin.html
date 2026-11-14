@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>Aplikasi Penelitian Dosen - Halaman Admin</title>
+
+	<script>
+        if (localStorage.getItem('admin_auth') !== 'true') {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+
+	<link rel="stylesheet" href="assets/styles/style.min.css">
+	<link rel="stylesheet" href="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.min.css">
+	<link rel="stylesheet" href="assets/plugin/waves/waves.min.css">
+	<link rel="stylesheet" href="assets/plugin/sweet-alert/sweetalert.css">
+	<link rel="stylesheet" href="assets/color-switcher/color-switcher.min.css">
+	<link rel="stylesheet" href="assets/plugin/datatables/media/css/dataTables.bootstrap.min.css">
+	<link rel="stylesheet" href="assets/plugin/datatables/extensions/Responsive/css/responsive.bootstrap.min.css">
+</head>
+
+<body>
+<div class="main-menu">
+	<header class="header">
+		<a href="index.html" class="logo">Tugas RPL</a>
+		<button type="button" class="button-close fa fa-times js__menu_close"></button>
+		<div class="user">
+			<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span class="status online"></span></a>
+			<h5 class="name"><a href="profile.html">Admin</a></h5>
+			<h5 class="position">Admin</h5>
+		</div>
+	</header>
+	<div class="content">
+		<div class="navigation">
+			<h5 class="title">Navigasi</h5>
+			<ul class="menu js__accordion">
+				<li>
+					<a class="waves-effect" href="admin.html"><i class="menu-icon fa fa-home"></i><span>Halaman Utama</span></a>
+				</li>
+				<li>
+					<a class="waves-effect" href="#" onclick="logout()"><i class="menu-icon fa fa-sign-out"></i><span>Logout</span></a>
+				</li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+<div class="fixed-navbar">
+	<div class="pull-left">
+		<button type="button" class="menu-mobile-button glyphicon glyphicon-menu-hamburger js__menu_mobile"></button>
+		<h1 class="page-title">Manajemen Dosen</h1>
+	</div>
+	<div class="pull-right">
+		<div class="ico-item fa fa-arrows-alt js__full_screen"></div>
+		<a href="#" class="ico-item fa fa-sign-out" onclick="logout()"></a>
+	</div>
+</div>
+
+<div id="wrapper">
+	<div class="main-content">
+		
+		<!-- ================= NEW CONTENT START ================= -->
+		<div class="row">
+			<div class="col-md-12">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h3 class="panel-title">Daftar Dosen</h3>
+						<button class="btn btn-primary btn-sm pull-right" data-toggle="modal" data-target="#modalAddDosen">
+							<i class="fa fa-plus"></i> Tambah Dosen
+						</button>
+						<div class="clearfix"></div>
+					</div>
+					<div class="panel-body">
+						<table id="tabelDosen" class="table table-striped table-bordered dt-responsive nowrap" width="100%">
+							<thead>
+								<tr>
+									<th>Dosen ID</th>
+									<th>Nama Dosen</th>
+									<th>Foto Profil</th>
+								</tr>
+							</thead>
+							<tbody>
+								<!-- Data akan diisi via JavaScript -->
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- ================= NEW CONTENT END ================= -->
+
+		<footer class="footer">
+			<ul class="list-inline">
+				<li>2026 © Tugas RPL.</li>
+			</ul>
+		</footer>
+	</div>
+</div>
+
+<!-- ================= MODAL ADD DOSEN ================= -->
+<div class="modal fade" id="modalAddDosen" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<form id="formAddDosen">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="myModalLabel">Tambah Dosen Baru</h4>
+				</div>
+				<div class="modal-body">
+					<div class="form-group">
+						<label for="dosen_id">Dosen ID</label>
+						<input type="text" class="form-control" id="dosen_id" placeholder="Contoh: DSN001" required>
+					</div>
+					<div class="form-group">
+						<label for="dosen_name">Nama Dosen</label>
+						<input type="text" class="form-control" id="dosen_name" placeholder="Masukkan nama lengkap" required>
+					</div>
+					<p class="text-muted"><small>*Password default akan di-set otomatis menjadi <b>1234567</b>. Foto profil bisa diunggah oleh dosen setelah login.</small></p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+					<button type="submit" class="btn btn-primary" id="btnSaveDosen">Simpan</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+	<!-- Scripts -->
+	<script src="assets/scripts/jquery.min.js"></script>
+	<script src="assets/scripts/modernizr.min.js"></script>
+	<script src="assets/plugin/bootstrap/js/bootstrap.min.js"></script>
+	<script src="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
+	<script src="assets/plugin/nprogress/nprogress.js"></script>
+	<script src="assets/plugin/sweet-alert/sweetalert.min.js"></script>
+	<script src="assets/plugin/waves/waves.min.js"></script>
+	<script src="assets/plugin/fullscreen/jquery.fullscreen-min.js"></script>
+
+	<!-- Data Tables -->
+	<script src="assets/plugin/datatables/media/js/jquery.dataTables.min.js"></script>
+	<script src="assets/plugin/datatables/media/js/dataTables.bootstrap.min.js"></script>
+	<script src="assets/plugin/datatables/extensions/Responsive/js/dataTables.responsive.min.js"></script>
+	<script src="assets/plugin/datatables/extensions/Responsive/js/responsive.bootstrap.min.js"></script>
+
+	<script src="assets/scripts/main.min.js"></script>
+	<script src="assets/color-switcher/color-switcher.min.js"></script>
+
+	<!-- ================= CUSTOM SCRIPT FOR ADMIN ================= -->
+	<script>
+		let tableDosen;
+
+		// Load data dosen ke datatables
+		function loadDosen() {
+			// Hancurkan datatable lama jika ada (untuk reload)
+			if ($.fn.DataTable.isDataTable('#tabelDosen')) {
+				$('#tabelDosen').DataTable().destroy();
+			}
+
+			$('#tabelDosen').DataTable({
+				"ajax": {
+					"url": "/api/dosen", // Nginx akan meneruskan ini ke backend
+					"dataSrc": ""
+				},
+				"columns": [
+					{ "data": "dosen_id" },
+					{ "data": "dosen_name" },
+					{ 
+						"data": "dosen_image",
+						"render": function(data, type, row) {
+							if (data) {
+								return `<img src="/api/uploads/${data}" alt="Foto" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">`;
+							} else {
+								return '<span class="label label-default">Belum ada foto</span>';
+							}
+						}
+					}
+				]
+			});
+		}
+
+		// Handle form submit (Tambah Dosen)
+		$('#formAddDosen').on('submit', function(e) {
+			e.preventDefault();
+			
+			const dosen_id = $('#dosen_id').val();
+			const dosen_name = $('#dosen_name').val();
+			const btn = $('#btnSaveDosen');
+
+			btn.prop('disabled', true).text('Menyimpan...');
+
+			$.ajax({
+				url: '/api/dosen',
+				method: 'POST',
+				contentType: 'application/json',
+				data: JSON.stringify({ dosen_id: dosen_id, dosen_name: dosen_name }),
+				success: function(response) {
+					$('#modalAddDosen').modal('hide');
+					$('#formAddDosen')[0].reset();
+					swal("Berhasil!", response.message, "success");
+					loadDosen(); // Reload tabel
+				},
+				error: function(xhr) {
+					const errMsg = xhr.responseJSON ? xhr.responseJSON.error : 'Terjadi kesalahan sistem.';
+					swal("Gagal!", errMsg, "error");
+				},
+				complete: function() {
+					btn.prop('disabled', false).text('Simpan');
+				}
+			});
+		});
+
+		// Logout function
+		function logout() {
+			swal({
+				title: "Logout?",
+				text: "Anda akan keluar dari halaman admin.",
+				type: "warning",
+				showCancelButton: true,
+				confirmButtonColor: "#DD6B55",
+				confirmButtonText: "Ya, Logout!",
+				closeOnConfirm: true
+			}, function() {
+				localStorage.removeItem('admin_auth');
+				window.location.href = 'index.html';
+			});
+		}
+
+		// Inisialisasi saat halaman siap
+		$(document).ready(function() {
+			loadDosen();
+		});
+	</script>
+</body>
+</html>

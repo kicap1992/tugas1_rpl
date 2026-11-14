@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>Aplikasi Penelitian Dosen - Halaman Penelitian Dosen</title>
+
+	<script>
+		(async function checkAuth() {
+			const dosenId = localStorage.getItem('dosen_id');
+			const dosenName = localStorage.getItem('dosen_name');
+
+			if (!dosenId || !dosenName) {
+				localStorage.clear();
+				window.location.href = 'index.html';
+				return;
+			}
+
+			try {
+				const response = await fetch(`/api/dosen/verify?dosen_id=${encodeURIComponent(dosenId)}&dosen_name=${encodeURIComponent(dosenName)}`);
+				const data = await response.json();
+
+				if (response.ok && data.valid) {
+					document.body.style.display = 'block';
+				} else {
+					localStorage.clear();
+					window.location.href = 'index.html';
+				}
+			} catch (error) {
+				console.error("Auth check failed:", error);
+				localStorage.clear();
+				window.location.href = 'index.html';
+			}
+		})();
+	</script>
+
+	<link rel="stylesheet" href="assets/styles/style.min.css">
+	<link rel="stylesheet" href="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.min.css">
+	<link rel="stylesheet" href="assets/plugin/waves/waves.min.css">
+	<link rel="stylesheet" href="assets/plugin/sweet-alert/sweetalert.css">
+	<link rel="stylesheet" href="assets/color-switcher/color-switcher.min.css">
+	<link rel="stylesheet" href="assets/plugin/datatables/media/css/dataTables.bootstrap.min.css">
+	<link rel="stylesheet" href="assets/plugin/datatables/extensions/Responsive/css/responsive.bootstrap.min.css">
+	<style>
+		body {
+			display: none;
+		}
+
+		/* Hide body until auth passes */
+		.modal-body .form-group {
+			margin-bottom: 15px;
+		}
+
+		.file-item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 5px;
+			padding: 8px;
+			background: #f9f9f9;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+		}
+
+		.file-item a {
+			color: #333;
+			text-decoration: none;
+			font-weight: 500;
+		}
+
+		.file-item a:hover {
+			color: #007bff;
+			text-decoration: underline;
+		}
+
+		.file-item button {
+			padding: 2px 8px;
+			font-size: 12px;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="main-menu">
+		<header class="header">
+			<a href="index.html" class="logo">Tugas RPL</a>
+			<button type="button" class="button-close fa fa-times js__menu_close"></button>
+			<div class="user">
+				<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span
+						class="status online"></span></a>
+				<h5 class="name"><a href="#" id="dosenName">Dosen</a></h5>
+				<h5 class="position">Dosen</h5>
+			</div>
+		</header>
+		<div class="content">
+			<div class="navigation">
+				<h5 class="title">Navigasi</h5>
+				<ul class="menu js__accordion">
+					<li><a class="waves-effect" href="dosen.html"><i class="menu-icon fa fa-home"></i><span>Halaman
+								Utama</span></a></li>
+					<li><a class="waves-effect" href="#" onclick="logout()"><i
+								class="menu-icon fa fa-sign-out"></i><span>Logout</span></a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div class="fixed-navbar">
+		<div class="pull-left">
+			<button type="button"
+				class="menu-mobile-button glyphicon glyphicon-menu-hamburger js__menu_mobile"></button>
+			<h1 class="page-title">Manajemen Penelitian</h1>
+		</div>
+		<div class="pull-right">
+			<div class="ico-item fa fa-arrows-alt js__full_screen"></div>
+			<a href="#" class="ico-item fa fa-sign-out" onclick="logout()"></a>
+		</div>
+	</div>
+
+	<div id="wrapper">
+		<div class="main-content">
+			<div class="row small-spacing">
+				<div class="col-md-12">
+					<div class="box-content">
+						<header class="panel-heading"
+							style="display: flex; justify-content: space-between; align-items: center;">
+							<h4 class="box-title" style="margin: 0;">Daftar Penelitian</h4>
+							<button class="btn btn-primary btn-xs" onclick="openAddModal()"><i class="fa fa-plus"></i>
+								Tambah Penelitian</button>
+						</header>
+						<div class="panel-body">
+							<table id="tablePenelitian" class="table table-striped table-bordered dt-responsive nowrap"
+								style="width:100%">
+								<thead>
+									<tr>
+										<th>No</th>
+										<th>Judul Penelitian</th>
+										<th>Tahun</th>
+										<th>Status</th>
+										<th>Aksi</th>
+									</tr>
+								</thead>
+								<tbody id="tbodyPenelitian">
+									<!-- Data will be loaded here -->
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<footer class="footer">
+				<ul class="list-inline">
+					<li>2026 © Tugas RPL.</li>
+				</ul>
+			</footer>
+		</div>
+	</div>
+
+	<!-- Modal Penelitian -->
+	<div class="modal fade" id="modalPenelitian" tabindex="-1" role="dialog" aria-labelledby="modalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+							aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="modalLabel">Tambah Penelitian</h4>
+				</div>
+				<div class="modal-body">
+					<form id="formPenelitian">
+						<input type="hidden" id="penelitianId">
+						<input type="hidden" id="dosenId" value="">
+
+						<div class="form-group">
+							<label for="judul_penelitian">Judul Penelitian</label>
+							<input type="text" class="form-control" id="judul_penelitian" required>
+						</div>
+
+						<div class="form-group">
+							<label for="tahun_penelitian">Tahun Penelitian</label>
+							<select class="form-control" id="tahun_penelitian" required>
+								<option value="">-- Pilih Tahun --</option>
+								<!-- Options generated by JS -->
+							</select>
+						</div>
+
+						<div class="form-group">
+							<label for="status_penelitian">Status Penelitian</label>
+							<select class="form-control" id="status_penelitian" required>
+								<option value="">-- Pilih Status --</option>
+								<option value="Berjalan">Berjalan</option>
+								<option value="Selesai">Selesai</option>
+							</select>
+						</div>
+
+						<!-- SECTION: FILE UPLOAD (Hidden in View Mode) -->
+						<div class="form-group" id="uploadSection">
+							<label for="files">Upload Hasil Publikasi Baru (PDF, Max 1MB, Max 3 File)</label>
+							<input type="file" class="form-control" id="files" accept="application/pdf" multiple>
+							<small class="text-muted">Biarkan kosong jika tidak ingin menambah file baru.</small>
+						</div>
+
+						<!-- SECTION: FILE LIST (Visible in all modes) -->
+						<div class="form-group" id="fileListSection" style="display: none;">
+							<label>Daftar File Publikasi:</label>
+							<div id="existingFilesContainer" class="mt-2"></div>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
+					<button type="button" class="btn btn-primary" id="btnSave"
+						onclick="savePenelitian()">Simpan</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Scripts -->
+	<script src="assets/scripts/jquery.min.js"></script>
+	<script src="assets/scripts/modernizr.min.js"></script>
+	<script src="assets/plugin/bootstrap/js/bootstrap.min.js"></script>
+	<script src="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
+	<script src="assets/plugin/nprogress/nprogress.js"></script>
+	<script src="assets/plugin/sweet-alert/sweetalert.min.js"></script>
+	<script src="assets/plugin/waves/waves.min.js"></script>
+	<script src="assets/plugin/fullscreen/jquery.fullscreen-min.js"></script>
+
+	<!-- Data Tables -->
+	<script src="assets/plugin/datatables/media/js/jquery.dataTables.min.js"></script>
+	<script src="assets/plugin/datatables/media/js/dataTables.bootstrap.min.js"></script>
+	<script src="assets/plugin/datatables/extensions/Responsive/js/dataTables.responsive.min.js"></script>
+	<script src="assets/plugin/datatables/extensions/Responsive/js/responsive.bootstrap.min.js"></script>
+
+	<script src="assets/scripts/main.min.js"></script>
+	<script src="assets/color-switcher/color-switcher.min.js"></script>
+
+	<script>
+		let dataTable;
+		let currentEditFiles = [];
+		let isViewMode = false; // Flag to track if we are in View mode
+
+		// Auth & Init
+		$(document).ready(function () {
+			const dosenName = localStorage.getItem('dosen_name');
+			const dosenId = localStorage.getItem('dosen_id');
+
+			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
+			if (dosenId) document.getElementById('dosenId').value = dosenId;
+
+			// Populate Years
+			const yearSelect = document.getElementById('tahun_penelitian');
+			for (let y = 2026; y >= 2010; y--) {
+				let opt = document.createElement('option');
+				opt.value = y;
+				opt.innerHTML = y;
+				yearSelect.appendChild(opt);
+			}
+
+			initDataTable(dosenId);
+		});
+
+		function initDataTable(dosenId) {
+			dataTable = $('#tablePenelitian').DataTable({
+				ajax: {
+					url: `/api/penelitian/dosen/${dosenId}`,
+					dataSrc: ''
+				},
+				columns: [
+					{ data: null, render: (data, type, row, meta) => meta.row + 1 },
+					{ data: 'judul_penelitian' },
+					{ data: 'tahun_penelitian' },
+					{
+						data: 'status_penelitian',
+						render: function (data) {
+							let badge = data === 'Berjalan' ? 'label-warning' : 'label-success';
+							return `<span class="label ${badge}">${data}</span>`;
+						}
+					},
+					{
+						data: null,
+						render: function (data, type, row) {
+							return `
+								<button class="btn btn-info btn-xs" onclick="viewPenelitian(${row.id})"><i class="fa fa-eye"></i></button>
+								<button class="btn btn-warning btn-xs" onclick="editPenelitian(${row.id})"><i class="fa fa-pencil"></i></button>
+								<button class="btn btn-danger btn-xs" onclick="deletePenelitian(${row.id})"><i class="fa fa-trash"></i></button>
+							`;
+						}
+					}
+				]
+			});
+		}
+
+		// --- MODAL FUNCTIONS ---
+
+		function resetModal() {
+			$('#formPenelitian')[0].reset();
+			$('#penelitianId').val('');
+			$('#files').val('');
+			$('#existingFilesContainer').empty();
+			$('#fileListSection').hide();
+			currentEditFiles = [];
+			isViewMode = false;
+
+			// Reset inputs to enabled state
+			$('#formPenelitian input, #formPenelitian select').prop('disabled', false);
+			$('#btnSave').show();
+			$('#uploadSection').show();
+		}
+
+		function openAddModal() {
+			resetModal();
+			$('#modalLabel').text('Tambah Penelitian');
+			$('#modalPenelitian').modal('show');
+		}
+
+		function viewPenelitian(id) {
+			resetModal();
+			isViewMode = true;
+			$('#modalLabel').text('Lihat Penelitian');
+
+			// Disable inputs, hide save button, and hide upload section
+			$('#formPenelitian input, #formPenelitian select').prop('disabled', true);
+			$('#btnSave').hide();
+			$('#uploadSection').hide();
+
+			$('#modalPenelitian').modal('show');
+
+			$.get(`/api/penelitian/dosen/${localStorage.getItem('dosen_id')}`, function (data) {
+				const item = data.find(p => p.id === id);
+				if (item) {
+					$('#judul_penelitian').val(item.judul_penelitian);
+					$('#tahun_penelitian').val(item.tahun_penelitian);
+					$('#status_penelitian').val(item.status_penelitian);
+					renderExistingFiles(item.hasil_publikasi);
+				}
+			});
+		}
+
+		function editPenelitian(id) {
+			resetModal();
+			$('#modalLabel').text('Edit Penelitian');
+			$('#penelitianId').val(id);
+			$('#modalPenelitian').modal('show');
+
+			$.get(`/api/penelitian/dosen/${localStorage.getItem('dosen_id')}`, function (data) {
+				const item = data.find(p => p.id === id);
+				if (item) {
+					$('#judul_penelitian').val(item.judul_penelitian);
+					$('#tahun_penelitian').val(item.tahun_penelitian);
+					$('#status_penelitian').val(item.status_penelitian);
+					renderExistingFiles(item.hasil_publikasi);
+				}
+			});
+		}
+
+		function renderExistingFiles(filesData) {
+			// Check if it's already an array (from DB) or a string (from removeExistingFile)
+			if (Array.isArray(filesData)) {
+				currentEditFiles = filesData;
+			} else if (typeof filesData === 'string') {
+				try {
+					currentEditFiles = JSON.parse(filesData);
+				} catch (e) {
+					currentEditFiles = [];
+				}
+			} else {
+				currentEditFiles = [];
+			}
+
+			const container = $('#existingFilesContainer');
+			container.empty();
+
+			if (currentEditFiles.length > 0) {
+				$('#fileListSection').show();
+
+				currentEditFiles.forEach((filename, index) => {
+					let actionBtn = '';
+					if (!isViewMode) {
+						actionBtn = `<button type="button" class="btn btn-danger btn-xs" onclick="removeExistingFile(${index})">Hapus</button>`;
+					}
+
+					container.append(`
+						<div class="file-item">
+							<a href="/api/uploads/${filename}" target="_blank"><i class="fa fa-file-pdf-o text-danger"></i> ${filename}</a>
+							${actionBtn}
+						</div>
+					`);
+				});
+			} else {
+				$('#fileListSection').hide();
+			}
+		}
+
+		function removeExistingFile(index) {
+			currentEditFiles.splice(index, 1);
+			// We pass the array directly now, the function handles it
+			renderExistingFiles(currentEditFiles);
+		}
+
+		// --- CRUD ACTIONS ---
+
+		function savePenelitian() {
+			const id = $('#penelitianId').val();
+			const dosenId = $('#dosenId').val();
+			const judul = $('#judul_penelitian').val();
+			const tahun = $('#tahun_penelitian').val();
+			const status = $('#status_penelitian').val();
+			const files = $('#files')[0].files;
+
+			// Validation
+			if (!judul || !tahun || !status) {
+				swal("Peringatan", "Semua field wajib diisi!", "warning");
+				return;
+			}
+
+			if (files.length > 3) {
+				swal("Peringatan", "Maksimal 3 file publikasi!", "warning");
+				return;
+			}
+
+			for (let i = 0; i < files.length; i++) {
+				if (files[i].type !== 'application/pdf') {
+					swal("Peringatan", "Hanya file PDF yang diizinkan!", "warning");
+					return;
+				}
+				if (files[i].size > 1024 * 1024) {
+					swal("Peringatan", "Ukuran file maksimal 1MB!", "warning");
+					return;
+				}
+			}
+
+			if (currentEditFiles.length + files.length > 3) {
+				swal("Peringatan", "Total file (lama + baru) tidak boleh lebih dari 3!", "warning");
+				return;
+			}
+
+			// Prepare FormData
+			const formData = new FormData();
+			formData.append('judul_penelitian', judul);
+			formData.append('tahun_penelitian', tahun);
+			formData.append('status_penelitian', status);
+
+			if (id) {
+				// Edit mode
+				formData.append('existing_files', JSON.stringify(currentEditFiles));
+				for (let i = 0; i < files.length; i++) {
+					formData.append('files', files[i]);
+				}
+				$.ajax({
+					url: `/api/penelitian/${id}`,
+					type: 'PUT',
+					data: formData,
+					processData: false,
+					contentType: false,
+					success: function () {
+						swal("Berhasil!", "Data berhasil diupdate.", "success");
+						$('#modalPenelitian').modal('hide');
+						dataTable.ajax.reload();
+					},
+					error: function (xhr) {
+						swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
+					}
+				});
+			} else {
+				// Add mode
+				formData.append('dosen_id', dosenId);
+				for (let i = 0; i < files.length; i++) {
+					formData.append('files', files[i]);
+				}
+				$.ajax({
+					url: `/api/penelitian`,
+					type: 'POST',
+					data: formData,
+					processData: false,
+					contentType: false,
+					success: function () {
+						swal("Berhasil!", "Data berhasil ditambahkan.", "success");
+						$('#modalPenelitian').modal('hide');
+						dataTable.ajax.reload();
+					},
+					error: function (xhr) {
+						swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
+					}
+				});
+			}
+		}
+
+		function deletePenelitian(id) {
+			swal({
+				title: "Hapus Data?",
+				text: "Data penelitian ini akan dihapus permanen.",
+				type: "warning",
+				showCancelButton: true,
+				confirmButtonColor: "#DD6B55",
+				confirmButtonText: "Ya, Hapus!",
+				closeOnConfirm: false
+			}, function () {
+				$.ajax({
+					url: `/api/penelitian/${id}`,
+					type: 'DELETE',
+					success: function () {
+						swal("Terhapus!", "Data penelitian telah dihapus.", "success");
+						dataTable.ajax.reload();
+					},
+					error: function (xhr) {
+						swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
+					}
+				});
+			});
+		}
+
+		function logout() {
+			swal({
+				title: "Logout?",
+				text: "Anda akan keluar dari halaman admin.",
+				type: "warning",
+				showCancelButton: true,
+				confirmButtonColor: "#DD6B55",
+				confirmButtonText: "Ya, Logout!",
+				closeOnConfirm: true
+			}, function () {
+				localStorage.clear();
+				window.location.href = 'index.html';
+			});
+		}
+	</script>
+
+</body>
+
+</html>
