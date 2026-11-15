@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: karan456
-      MARIADB_DATABASE: tugas1_rpl
+      MARIADB_DATABASE: db_penelitian
       MARIADB_USER: karan
       MARIADB_PASSWORD: karan456
     volumes:
@@ -28,7 +28,7 @@ services:
       - DB_HOST=db
       - DB_USER=karan
       - DB_PASSWORD=karan456
-      - DB_NAME=tugas1_rpl
+      - DB_NAME=db_penelitian
       - DB_PORT=3306
     volumes:
       - ./be/uploads:/app/uploads  # <--- ADD THIS LINE

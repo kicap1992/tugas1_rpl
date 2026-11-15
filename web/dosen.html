@@ -48,9 +48,13 @@
 			display: none;
 		}
 
-		/* Hide body until auth passes */
 		.modal-body .form-group {
 			margin-bottom: 15px;
+		}
+
+		/* Hide default DataTables search */
+		.dataTables_filter {
+			display: none;
 		}
 
 		.file-item {
@@ -63,18 +67,15 @@
 			border: 1px solid #ddd;
 			border-radius: 4px;
 			gap: 10px;
-			/* Adds space between the link and the button */
 		}
 
 		.file-item a {
 			color: #333;
 			text-decoration: none;
 			font-weight: 500;
-			/* These 3 lines fix the text overflow */
 			word-break: break-all;
 			overflow: hidden;
 			text-overflow: ellipsis;
-			/* Allow the link to shrink so the button doesn't get pushed out */
 			flex: 1;
 		}
 
@@ -86,8 +87,25 @@
 		.file-item button {
 			padding: 2px 8px;
 			font-size: 12px;
-			/* Prevent the button from shrinking or wrapping */
 			flex-shrink: 0;
+		}
+
+		/* Styles for History Panel */
+		.history-panel {
+			margin-bottom: 15px;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+		}
+
+		.history-header {
+			background-color: #f5f5f5;
+			padding: 10px 15px;
+			border-bottom: 1px solid #ddd;
+			font-weight: bold;
+		}
+
+		.history-body {
+			padding: 15px;
 		}
 	</style>
 </head>
@@ -95,7 +113,7 @@
 <body>
 	<div class="main-menu">
 		<header class="header">
-			<a href="index.html" class="logo">Tugas RPL</a>
+			<a href="admin.html" class="logo">UHM</a>
 			<button type="button" class="button-close fa fa-times js__menu_close"></button>
 			<div class="user">
 				<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span
@@ -132,14 +150,93 @@
 	<div id="wrapper">
 		<div class="main-content">
 			<div class="row small-spacing">
+				<div class="col-lg-3 col-md-6 col-xs-12">
+					<div class="box-content">
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-apple text-inverse"></i>
+							<h2 class="counter text-inverse">2561</h2>
+							<p class="text">Some text here</p>
+						</div>
+					</div>
+					<!-- /.box-content -->
+				</div>
+				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
+				<div class="col-lg-3 col-md-6 col-xs-12">
+					<div class="box-content">
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-android text-success"></i>
+							<h2 class="counter text-success">3562</h2>
+							<p class="text">Some text here</p>
+						</div>
+					</div>
+					<!-- /.box-content -->
+				</div>
+				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
+				<div class="col-lg-3 col-md-6 col-xs-12">
+					<div class="box-content">
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-users text-primary"></i>
+							<h2 class="counter text-primary">283</h2>
+							<p class="text">Some text here</p>
+						</div>
+					</div>
+					<!-- /.box-content -->
+				</div>
+				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
+				<div class="col-lg-3 col-md-6 col-xs-12">
+					<div class="box-content">
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-area-chart text-info"></i>
+							<h2 class="counter text-info">241</h2>
+							<p class="text">Some text here</p>
+						</div>
+					</div>
+					<!-- /.box-content -->
+				</div>
+				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
+			</div>
+			<!-- .row -->
+			<div class="row small-spacing">
 				<div class="col-md-12">
 					<div class="box-content">
-						<header class="panel-heading"
-							style="display: flex; justify-content: space-between; align-items: center;">
-							<h4 class="box-title" style="margin: 0;">Daftar Penelitian</h4>
-							<button class="btn btn-primary btn-xs" onclick="openAddModal()"><i class="fa fa-plus"></i>
-								Tambah Penelitian</button>
+
+						<!-- UPDATED HEADER WITH CUSTOM SEARCH -->
+						<header class="panel-heading" style="display: flex; flex-direction: column; gap: 15px;">
+							<div style="display: flex; justify-content: space-between; align-items: center;">
+								<h4 class="box-title" style="margin: 0;">Daftar Penelitian</h4>
+								<button class="btn btn-primary btn-xs" onclick="openAddModal()"><i
+										class="fa fa-plus"></i> Tambah Penelitian</button>
+							</div>
+
+							<div class="row">
+								<div class="col-md-4">
+									<label>Judul Penelitian</label>
+									<input type="text" id="searchJudul" class="form-control"
+										placeholder="Cari judul...">
+								</div>
+								<div class="col-md-3">
+									<label>Tahun Dari</label>
+									<select id="searchTahunFrom" class="form-control">
+										<option value="">-- Pilih --</option>
+									</select>
+								</div>
+								<div class="col-md-3">
+									<label>Tahun Sampai</label>
+									<select id="searchTahunTo" class="form-control">
+										<option value="">-- Pilih --</option>
+									</select>
+								</div>
+								<!-- Added margin-top: 24px; to align with the inputs -->
+								<div class="col-md-2"
+									style="display: flex; align-items: flex-end; gap: 5px; margin-top: 24px;">
+									<button class="btn btn-info" onclick="applyCustomFilter()" style="flex: 1;"><i
+											class="fa fa-search"></i> Cari</button>
+									<button class="btn btn-default" onclick="resetCustomFilter()"><i
+											class="fa fa-refresh"></i></button>
+								</div>
+							</div>
 						</header>
+
 						<div class="panel-body" style="overflow-x: auto;">
 							<table id="tablePenelitian" class="table table-striped table-bordered dt-responsive nowrap"
 								style="width:100%">
@@ -149,12 +246,11 @@
 										<th>Judul Penelitian</th>
 										<th>Tahun</th>
 										<th>Status</th>
+										<th>Terakhir Update</th>
 										<th>Aksi</th>
 									</tr>
 								</thead>
-								<tbody id="tbodyPenelitian">
-									<!-- Data will be loaded here -->
-								</tbody>
+								<tbody id="tbodyPenelitian"></tbody>
 							</table>
 						</div>
 					</div>
@@ -163,13 +259,13 @@
 
 			<footer class="footer">
 				<ul class="list-inline">
-					<li>2026 © Tugas RPL.</li>
+					<li>2026 © Sistem Penelitian Dosen | Universitas Handayani Makassar.</li>
 				</ul>
 			</footer>
 		</div>
 	</div>
 
-	<!-- Modal Penelitian -->
+	<!-- Modal Penelitian (Add/Edit/View) -->
 	<div class="modal fade" id="modalPenelitian" tabindex="-1" role="dialog" aria-labelledby="modalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
@@ -192,7 +288,6 @@
 							<label for="tahun_penelitian">Tahun Penelitian</label>
 							<select class="form-control" id="tahun_penelitian" required>
 								<option value="">-- Pilih Tahun --</option>
-								<!-- Options generated by JS -->
 							</select>
 						</div>
 
@@ -205,24 +300,58 @@
 							</select>
 						</div>
 
-						<!-- SECTION: FILE UPLOAD (Hidden in View Mode) -->
+						<div class="form-group">
+							<label for="keterangan">Keterangan / Info Penelitian</label>
+							<textarea class="form-control" id="keterangan" rows="3"
+								placeholder="Jelaskan secara singkat progres atau hasil penelitian..."></textarea>
+						</div>
+
 						<div class="form-group" id="uploadSection">
 							<label for="files">Upload Hasil Publikasi Baru (PDF, Max 1MB, Max 3 File)</label>
 							<input type="file" class="form-control" id="files" accept="application/pdf" multiple>
 							<small class="text-muted">Biarkan kosong jika tidak ingin menambah file baru.</small>
 						</div>
 
-						<!-- SECTION: FILE LIST (Visible in all modes) -->
 						<div class="form-group" id="fileListSection" style="display: none;">
 							<label>Daftar File Publikasi:</label>
 							<div id="existingFilesContainer" class="mt-2"></div>
 						</div>
+
+						<div id="timestampInfo"
+							style="display: none; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+							<p class="text-muted" style="margin: 0; font-size: 12px;">
+								<strong>Dibuat:</strong> <span id="lblCreated"></span><br>
+								<strong>Terakhir Diubah:</strong> <span id="lblUpdated"></span>
+							</p>
+						</div>
 					</form>
 				</div>
 				<div class="modal-footer">
+					<button type="button" class="btn btn-info pull-left" id="btnHistory" style="display: none;"
+						onclick="viewHistory()"><i class="fa fa-history"></i> Riwayat Laporan</button>
 					<button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
 					<button type="button" class="btn btn-primary" id="btnSave"
 						onclick="savePenelitian()">Simpan</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal History / Laporan -->
+	<div class="modal fade" id="modalHistory" tabindex="-1" role="dialog">
+		<div class="modal-dialog modal-lg" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+					<h4 class="modal-title">Riwayat Perubahan Penelitian</h4>
+				</div>
+				<div class="modal-body">
+					<div id="historyContainer"></div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary pull-left" onclick="printLaporan()"><i
+							class="fa fa-print"></i> Cetak Laporan PDF</button>
+					<button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
 				</div>
 			</div>
 		</div>
@@ -243,14 +372,50 @@
 	<script src="assets/plugin/datatables/media/js/dataTables.bootstrap.min.js"></script>
 	<script src="assets/plugin/datatables/extensions/Responsive/js/dataTables.responsive.min.js"></script>
 	<script src="assets/plugin/datatables/extensions/Responsive/js/responsive.bootstrap.min.js"></script>
-
+	<script src="assets/block/jquery.blockUI.js"></script>
 	<script src="assets/scripts/main.min.js"></script>
 	<script src="assets/color-switcher/color-switcher.min.js"></script>
+	<script src="assets/block.js"></script>
 
 	<script>
 		let dataTable;
 		let currentEditFiles = [];
-		let isViewMode = false; // Flag to track if we are in View mode
+		let isViewMode = false;
+		let currentViewId = null;
+
+		// Custom Search Logic
+		$.fn.dataTable.ext.search.push(
+			function (settings, data, dataIndex) {
+				const judul = data[1].toLowerCase();
+				const tahun = parseInt(data[2]);
+
+				const searchJudul = $('#searchJudul').val().toLowerCase();
+				const searchFrom = $('#searchTahunFrom').val();
+				const searchTo = $('#searchTahunTo').val();
+
+				if (searchJudul && !judul.includes(searchJudul)) {
+					return false;
+				}
+				if (searchFrom && tahun < parseInt(searchFrom)) {
+					return false;
+				}
+				if (searchTo && tahun > parseInt(searchTo)) {
+					return false;
+				}
+				return true;
+			}
+		);
+
+		function applyCustomFilter() {
+			dataTable.draw();
+		}
+
+		function resetCustomFilter() {
+			$('#searchJudul').val('');
+			$('#searchTahunFrom').val('');
+			$('#searchTahunTo').val('');
+			dataTable.draw();
+		}
 
 		// Auth & Init
 		$(document).ready(function () {
@@ -260,7 +425,7 @@
 			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
 			if (dosenId) document.getElementById('dosenId').value = dosenId;
 
-			// Populate Years
+			// 1. Populate Years for the Form (Tambah/Edit)
 			const yearSelect = document.getElementById('tahun_penelitian');
 			for (let y = 2026; y >= 2010; y--) {
 				let opt = document.createElement('option');
@@ -269,8 +434,63 @@
 				yearSelect.appendChild(opt);
 			}
 
+			// 2. Populate "Tahun Dari" (Search Filter)
+			const fromSelect = document.getElementById('searchTahunFrom');
+			const toSelect = document.getElementById('searchTahunTo');
+
+			// Populate all years in "Tahun Dari" from 2010 to 2026
+			for (let y = 2010; y <= 2026; y++) {
+				let opt = document.createElement('option');
+				opt.value = y;
+				opt.innerHTML = y;
+				fromSelect.appendChild(opt);
+			}
+
+			// Set "Tahun Sampai" to be disabled initially
+			toSelect.disabled = true;
+			toSelect.innerHTML = '<option value="">-- Pilih Tahun Dari --</option>';
+
+			// 3. Add Event Listener to "Tahun Dari"
+			$('#searchTahunFrom').on('change', function () {
+				const selectedFrom = $(this).val();
+
+				// Reset "Tahun Sampai"
+				toSelect.innerHTML = '';
+
+				if (selectedFrom) {
+					// Enable "Tahun Sampai" if a start year is selected
+					toSelect.disabled = false;
+					toSelect.innerHTML = '<option value="">-- Pilih --</option>';
+
+					// Populate "Tahun Sampai" starting from the selected "Tahun Dari" up to 2026
+					for (let y = parseInt(selectedFrom); y <= 2026; y++) {
+						let opt = document.createElement('option');
+						opt.value = y;
+						opt.innerHTML = y;
+						toSelect.appendChild(opt);
+					}
+				} else {
+					// If "Tahun Dari" is cleared, disable "Tahun Sampai" again
+					toSelect.disabled = true;
+					toSelect.innerHTML = '<option value="">-- Pilih Tahun Dari Dulu --</option>';
+				}
+
+				// Redraw table to clear any previous filter
+				applyCustomFilter();
+			});
+
 			initDataTable(dosenId);
 		});
+
+
+		function formatDate(dateString) {
+			if (!dateString) return '-';
+			const date = new Date(dateString);
+			return date.toLocaleString('id-ID', {
+				day: '2-digit', month: 'short', year: 'numeric',
+				hour: '2-digit', minute: '2-digit'
+			});
+		}
 
 		function initDataTable(dosenId) {
 			dataTable = $('#tablePenelitian').DataTable({
@@ -290,16 +510,21 @@
 						}
 					},
 					{
+						data: 'updated_at',
+						render: function (data) { return formatDate(data); }
+					},
+					{
 						data: null,
 						render: function (data, type, row) {
 							return `
-								<button class="btn btn-info btn-xs" onclick="viewPenelitian(${row.id})"><i class="fa fa-eye"></i></button>
-								<button class="btn btn-warning btn-xs" onclick="editPenelitian(${row.id})"><i class="fa fa-pencil"></i></button>
-								<button class="btn btn-danger btn-xs" onclick="deletePenelitian(${row.id})"><i class="fa fa-trash"></i></button>
+								<button class="btn btn-info btn-xs" title="Lihat" onclick="viewPenelitian(${row.id})"><i class="fa fa-eye"></i></button>
+								<button class="btn btn-warning btn-xs" title="Edit" onclick="editPenelitian(${row.id})"><i class="fa fa-pencil"></i></button>
+								<button class="btn btn-danger btn-xs" title="Hapus" onclick="deletePenelitian(${row.id})"><i class="fa fa-trash"></i></button>
 							`;
 						}
 					}
-				]
+				],
+				order: [[4, "desc"]]
 			});
 		}
 
@@ -311,11 +536,13 @@
 			$('#files').val('');
 			$('#existingFilesContainer').empty();
 			$('#fileListSection').hide();
+			$('#timestampInfo').hide();
+			$('#btnHistory').hide();
 			currentEditFiles = [];
 			isViewMode = false;
+			currentViewId = null;
 
-			// Reset inputs to enabled state
-			$('#formPenelitian input, #formPenelitian select').prop('disabled', false);
+			$('#formPenelitian input, #formPenelitian select, #formPenelitian textarea').prop('disabled', false);
 			$('#btnSave').show();
 			$('#uploadSection').show();
 		}
@@ -329,12 +556,13 @@
 		function viewPenelitian(id) {
 			resetModal();
 			isViewMode = true;
+			currentViewId = id;
 			$('#modalLabel').text('Lihat Penelitian');
 
-			// Disable inputs, hide save button, and hide upload section
-			$('#formPenelitian input, #formPenelitian select').prop('disabled', true);
+			$('#formPenelitian input, #formPenelitian select, #formPenelitian textarea').prop('disabled', true);
 			$('#btnSave').hide();
 			$('#uploadSection').hide();
+			$('#btnHistory').show();
 
 			$('#modalPenelitian').modal('show');
 
@@ -344,16 +572,26 @@
 					$('#judul_penelitian').val(item.judul_penelitian);
 					$('#tahun_penelitian').val(item.tahun_penelitian);
 					$('#status_penelitian').val(item.status_penelitian);
+					$('#keterangan').val(item.keterangan || '');
 					renderExistingFiles(item.hasil_publikasi);
+
+					$('#lblCreated').text(formatDate(item.created_at));
+					$('#lblUpdated').text(formatDate(item.updated_at));
+					$('#timestampInfo').show();
 				}
 			});
 		}
+
 
 		function editPenelitian(id) {
 			resetModal();
-			$('#modalLabel').text('Edit Penelitian');
+			$('#modalLabel').text('Update Penelitian');
 			$('#penelitianId').val(id);
 			$('#modalPenelitian').modal('show');
+
+			// Disable Judul and Tahun for Edit mode
+			$('#judul_penelitian').prop('disabled', true);
+			$('#tahun_penelitian').prop('disabled', true);
 
 			$.get(`/api/penelitian/dosen/${localStorage.getItem('dosen_id')}`, function (data) {
 				const item = data.find(p => p.id === id);
@@ -361,13 +599,15 @@
 					$('#judul_penelitian').val(item.judul_penelitian);
 					$('#tahun_penelitian').val(item.tahun_penelitian);
 					$('#status_penelitian').val(item.status_penelitian);
+					$('#keterangan').val(item.keterangan || '');
 					renderExistingFiles(item.hasil_publikasi);
 				}
 			});
 		}
 
+
+
 		function renderExistingFiles(filesData) {
-			// Check if it's already an array (from DB) or a string (from removeExistingFile)
 			if (Array.isArray(filesData)) {
 				currentEditFiles = filesData;
 			} else if (typeof filesData === 'string') {
@@ -387,6 +627,8 @@
 				$('#fileListSection').show();
 
 				currentEditFiles.forEach((filename, index) => {
+					let displayName = filename.substring(filename.indexOf('-') + 1);
+
 					let actionBtn = '';
 					if (!isViewMode) {
 						actionBtn = `<button type="button" class="btn btn-danger btn-xs" onclick="removeExistingFile(${index})">Hapus</button>`;
@@ -394,7 +636,7 @@
 
 					container.append(`
 						<div class="file-item">
-							<a href="/api/uploads/${filename}" target="_blank"><i class="fa fa-file-pdf-o text-danger"></i> ${filename}</a>
+							<a href="/api/uploads/${filename}" target="_blank"><i class="fa fa-file-pdf-o text-danger"></i> ${displayName}</a>
 							${actionBtn}
 						</div>
 					`);
@@ -406,8 +648,63 @@
 
 		function removeExistingFile(index) {
 			currentEditFiles.splice(index, 1);
-			// We pass the array directly now, the function handles it
 			renderExistingFiles(currentEditFiles);
+		}
+
+		// --- HISTORY FUNCTION ---
+		function viewHistory() {
+			if (!currentViewId) return;
+			$('#historyContainer').empty();
+			$('#modalPenelitian').modal('hide');
+			$('#modalHistory').modal('show');
+
+			$.get(`/api/laporan/${currentViewId}`, function (data) {
+				if (data.length === 0) {
+					$('#historyContainer').html('<p class="text-center text-muted">Belum ada riwayat.</p>');
+					return;
+				}
+
+				data.forEach((log, index) => {
+					let filesHtml = '';
+					if (log.hasil_publikasi) {
+						try {
+							const files = typeof log.hasil_publikasi === 'string' ? JSON.parse(log.hasil_publikasi) : log.hasil_publikasi;
+							files.forEach(f => {
+								let displayName = f.substring(f.indexOf('-') + 1);
+								filesHtml += `<div class="file-item" style="margin-top:5px;">
+									<a href="/api/uploads/${f}" target="_blank"><i class="fa fa-file-pdf-o text-danger"></i> ${displayName}</a>
+								</div>`;
+							});
+						} catch (e) { }
+					}
+
+					$('#historyContainer').append(`
+						<div class="history-panel">
+							<div class="history-header">
+								Update #${data.length - index} 
+								<span class="pull-right text-muted" style="font-size: 12px; font-weight: normal;">
+									${formatDate(log.created_at)}
+								</span>
+							</div>
+							<div class="history-body">
+								<table class="table table-condensed" style="margin-bottom: 0;">
+									<tr><td width="120"><strong>Status</strong></td><td>: <span class="label ${log.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success'}">${log.status_penelitian}</span></td></tr>
+									<tr><td><strong>Keterangan</strong></td><td>: ${log.keterangan || '-'}</td></tr>
+									<tr><td><strong>File</strong></td><td>${filesHtml || '-'}</td></tr>
+								</table>
+							</div>
+						</div>
+					`);
+				});
+			});
+		}
+
+		function printLaporan() {
+			if (currentViewId) {
+				window.open(`laporan.html?id=${currentViewId}`, '_blank');
+			} else {
+				swal("Gagal", "ID Penelitian tidak ditemukan.", "error");
+			}
 		}
 
 		// --- CRUD ACTIONS ---
@@ -418,11 +715,11 @@
 			const judul = $('#judul_penelitian').val();
 			const tahun = $('#tahun_penelitian').val();
 			const status = $('#status_penelitian').val();
+			const keterangan = $('#keterangan').val();
 			const files = $('#files')[0].files;
 
-			// Validation
 			if (!judul || !tahun || !status) {
-				swal("Peringatan", "Semua field wajib diisi!", "warning");
+				swal("Peringatan", "Judul, Tahun, dan Status wajib diisi!", "warning");
 				return;
 			}
 
@@ -447,14 +744,13 @@
 				return;
 			}
 
-			// Prepare FormData
 			const formData = new FormData();
 			formData.append('judul_penelitian', judul);
 			formData.append('tahun_penelitian', tahun);
 			formData.append('status_penelitian', status);
+			formData.append('keterangan', keterangan);
 
 			if (id) {
-				// Edit mode
 				formData.append('existing_files', JSON.stringify(currentEditFiles));
 				for (let i = 0; i < files.length; i++) {
 					formData.append('files', files[i]);
@@ -465,17 +761,21 @@
 					data: formData,
 					processData: false,
 					contentType: false,
+					beforeSend: function () {
+						$('#modalPenelitian').modal('hide');
+						blockUI();
+					},
 					success: function () {
 						swal("Berhasil!", "Data berhasil diupdate.", "success");
-						$('#modalPenelitian').modal('hide');
 						dataTable.ajax.reload();
 					},
+					complete: function () { $.unblockUI() },
 					error: function (xhr) {
+						$.unblockUI();
 						swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
 					}
 				});
 			} else {
-				// Add mode
 				formData.append('dosen_id', dosenId);
 				for (let i = 0; i < files.length; i++) {
 					formData.append('files', files[i]);
@@ -486,12 +786,17 @@
 					data: formData,
 					processData: false,
 					contentType: false,
+					beforeSend: function () {
+						$('#modalPenelitian').modal('hide');
+						blockUI({ message: 'Menyimpan perubahan...' });
+					},
 					success: function () {
 						swal("Berhasil!", "Data berhasil ditambahkan.", "success");
-						$('#modalPenelitian').modal('hide');
 						dataTable.ajax.reload();
 					},
+					complete: function () { $.unblockUI(); },
 					error: function (xhr) {
+						$.unblockUI();
 						swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
 					}
 				});
@@ -525,7 +830,7 @@
 		function logout() {
 			swal({
 				title: "Logout?",
-				text: "Anda akan keluar dari halaman admin.",
+				text: "Anda akan keluar dari halaman dosen.",
 				type: "warning",
 				showCancelButton: true,
 				confirmButtonColor: "#DD6B55",

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Laporan Penelitian Dosen</title>
+    <style>
+        /* Base Styles */
+        body {
+            font-family: "Times New Roman", Times, serif;
+            margin: 40px;
+            color: #000;
+            background: #fff;
+        }
+        
+        /* Header Letterhead */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+        .header h2 { margin: 5px 0 0 0; font-size: 18px; font-weight: normal; }
+        .header p { margin: 5px 0 0 0; font-size: 14px; }
+
+        /* Info Section */
+        .info-section {
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-section table { width: 100%; }
+        .info-section td { padding: 5px 0; vertical-align: top; }
+        .info-section .label { width: 180px; font-weight: bold; }
+
+        /* History Table */
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        table.data-table th, table.data-table td {
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        table.data-table th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+        
+        /* File Links */
+        .file-list { list-style: none; padding: 0; margin: 0; }
+        .file-list li { margin-bottom: 3px; }
+        .file-list a { color: #000; text-decoration: none; }
+        .file-list a:hover { text-decoration: underline; }
+
+        /* Signature Section */
+        .signature {
+            margin-top: 50px;
+            text-align: right;
+            font-size: 14px;
+        }
+        .signature p { margin: 5px 0; }
+        .signature-space { height: 80px; }
+
+        /* Print Specific Rules */
+        .no-print { text-align: right; margin-bottom: 20px; }
+        .no-print button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #007bff; color: #fff; border: none; border-radius: 4px;}
+        .no-print button:hover { background-color: #0056b3; }
+        .no-print a { margin-right: 10px; text-decoration: none; color: #333; font-size: 16px;}
+
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Buttons (Hidden when printing) -->
+    <div class="no-print">
+        <a href="dosen.html" style="float: left; margin-top: 10px;">&larr; Kembali ke Dasbor</a>
+        <button onclick="window.print()">🖨️ Cetak Laporan</button>
+    </div>
+
+    <!-- Letterhead -->
+    <div class="header">
+        <h1>Universitas Handayani Makassar</h1>
+        <p>Jl. Dummy Alamat No. 123, Kota Makassar, Sulawesi Selatan</p>
+        <p>Telp: (0421) 123-4567 | Email: info@univhandayani.ac.id</p>
+    </div>
+
+    <!-- Dosen Info -->
+    <div class="info-section">
+        <table>
+            <tr>
+                <td class="label">Nama Dosen</td>
+                <td>: <span id="printNamaDosen">Loading...</span></td>
+            </tr>
+            <tr>
+                <td class="label">NIDN / ID</td>
+                <td>: <span id="printIdDosen">Loading...</span></td>
+            </tr>
+            <tr>
+                <td class="label">Judul Penelitian</td>
+                <td>: <span id="printJudul">Loading...</span></td>
+            </tr>
+            <tr>
+                <td class="label">Status</td>
+                <td>: <span id="printStatus">Loading...</span></td>
+            </tr>
+            <tr>
+                <td class="label">Tanggal Submit</td>
+                <td>: <span id="printTanggalSubmit">Loading...</span></td>
+            </tr>
+            <tr>
+                <td class="label">Tanggal Revisi Terakhir</td>
+                <td>: <span id="printTanggalRevisi">Loading...</span></td>
+            </tr>
+        </table>
+    </div>
+
+    <h3 style="text-align: center; font-size: 16px; text-transform: uppercase; margin-bottom: 20px;">
+        Laporan Riwayat Penelitian
+    </h3>
+
+    <!-- History Table -->
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th width="5%">No</th>
+                <th width="20%">Tanggal Update</th>
+                <th width="15%">Status</th>
+                <th width="25%">Keterangan</th>
+                <th width="35%">File Publikasi</th>
+            </tr>
+        </thead>
+        <tbody id="printDataBody">
+            <tr><td colspan="5" style="text-align: center;">Memuat data...</td></tr>
+        </tbody>
+    </table>
+
+    <!-- Signature -->
+    <div class="signature">
+        <p>Makassar, <span id="printTglTtd"></span></p>
+        <p>Kepala LPPM Universitas Handayani</p>
+        <div class="signature-space"></div>
+        <p><b><u>( .............................. )</u></b></p>
+        <p>NIP. ................................</p>
+    </div>
+
+    <script>
+        // Helper to format date strings from DB (which are already in UTC+8)
+        function formatDateWIB(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            let dayName = days[date.getDay()];
+            let day = String(date.getDate()).padStart(2, '0');
+            let monthNum = String(date.getMonth() + 1).padStart(2, '0');
+            let year = date.getFullYear();
+            let hours = String(date.getHours()).padStart(2, '0');
+            let minutes = String(date.getMinutes()).padStart(2, '0');
+            let seconds = String(date.getSeconds()).padStart(2, '0');
+
+            return `${dayName}, ${day}-${monthNum}-${year} | ${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Helper to format just the date for the signature
+        function formatDateOnly(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            return `${date.getDate()} ${monthsShort[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        // Set date for signature
+        document.getElementById('printTglTtd').innerText = formatDateOnly(new Date());
+
+        // Get ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const penelitianId = urlParams.get('id');
+
+        if (!penelitianId) {
+            alert("ID Penelitian tidak ditemukan di URL!");
+            window.location.href = 'dosen.html';
+        }
+
+        // Fetch Dosen Info from LocalStorage
+        document.getElementById('printNamaDosen').innerText = localStorage.getItem('dosen_name') || '-';
+        document.getElementById('printIdDosen').innerText = localStorage.getItem('dosen_id') || '-';
+
+        // Fetch Main Data and History Data
+        // 1. Fetch main data to get the title, status, and dates
+        fetch(`/api/penelitian/dosen/${localStorage.getItem('dosen_id')}`)
+            .then(res => res.json())
+            .then(data => {
+                const item = data.find(p => p.id == penelitianId);
+                if (item) {
+                    document.getElementById('printJudul').innerText = item.judul_penelitian;
+                    document.getElementById('printStatus').innerText = item.status_penelitian;
+                    document.getElementById('printTanggalSubmit').innerText = formatDateWIB(item.created_at);
+                    document.getElementById('printTanggalRevisi').innerText = formatDateWIB(item.updated_at);
+                }
+            })
+            .catch(err => console.error("Error fetching main data:", err));
+
+        // 2. Fetch History Data for the table
+        fetch(`/api/laporan/${penelitianId}`)
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('printDataBody');
+                tbody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tidak ada riwayat.</td></tr>';
+                    return;
+                }
+
+                data.forEach((log, index) => {
+                    let filesHtml = '-';
+                    if (log.hasil_publikasi) {
+                        try {
+                            const files = typeof log.hasil_publikasi === 'string' ? JSON.parse(log.hasil_publikasi) : log.hasil_publikasi;
+                            if (files.length > 0) {
+                                filesHtml = '<ul class="file-list">';
+                                files.forEach(f => {
+                                    let displayName = f.substring(f.indexOf('-') + 1);
+                                    filesHtml += `<li><a href="/api/uploads/${f}" target="_blank">${displayName}</a></li>`;
+                                });
+                                filesHtml += '</ul>';
+                            }
+                        } catch(e) {}
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="text-align: center;">${index + 1}</td>
+                            <td>${formatDateWIB(log.created_at)}</td>
+                            <td style="text-align: center;">${log.status_penelitian}</td>
+                            <td>${log.keterangan || '-'}</td>
+                            <td>${filesHtml}</td>
+                        </tr>
+                    `;
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('printDataBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Gagal memuat data.</td></tr>';
+            });
+    </script>
+</body>
+</html>
