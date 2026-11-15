@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>Aplikasi Penelitian Dosen - Profil Dosen</title>
+
+	<script>
+		(async function checkAuth() {
+			const dosenId = localStorage.getItem('dosen_id');
+			const dosenName = localStorage.getItem('dosen_name');
+
+			if (!dosenId || !dosenName) {
+				localStorage.clear();
+				window.location.href = 'index.html';
+				return;
+			}
+
+			try {
+				const response = await fetch(`/api/dosen/verify?dosen_id=${encodeURIComponent(dosenId)}&dosen_name=${encodeURIComponent(dosenName)}`);
+				const data = await response.json();
+
+				if (response.ok && data.valid) {
+					document.body.style.display = 'block';
+				} else {
+					localStorage.clear();
+					window.location.href = 'index.html';
+				}
+			} catch (error) {
+				console.error("Auth check failed:", error);
+				localStorage.clear();
+				window.location.href = 'index.html';
+			}
+		})();
+	</script>
+
+	<link rel="stylesheet" href="assets/styles/style.min.css">
+	<link rel="stylesheet" href="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.min.css">
+	<link rel="stylesheet" href="assets/plugin/waves/waves.min.css">
+	<link rel="stylesheet" href="assets/plugin/sweet-alert/sweetalert.css">
+	<link rel="stylesheet" href="assets/color-switcher/color-switcher.min.css">
+	<style>
+		body {
+			display: none;
+		}
+
+		/* Image Preview Style */
+		.profile-img-container {
+			text-align: center;
+			margin-bottom: 20px;
+		}
+
+		.profile-img-preview {
+			width: 150px;
+			height: 150px;
+			object-fit: cover;
+			border-radius: 50%;
+			border: 4px solid #fff;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+			margin-bottom: 15px;
+		}
+
+		/* Fix for the top-left profile image to be a perfect circle */
+		.header .avatar {
+			width: 65px;
+			height: 65px;
+			display: inline-block;
+			overflow: hidden;
+			border-radius: 50%;
+			vertical-align: middle;
+		}
+
+		.header .avatar img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			/* This ensures the image fills the circle without stretching */
+		}
+	</style>
+</head>
+
+<body>
+	<div class="main-menu">
+		<header class="header">
+			<a href="dosen_index.html" class="logo">UHM</a>
+			<button type="button" class="button-close fa fa-times js__menu_close"></button>
+			<div class="user">
+				<a href="#" class="avatar"><img src="assets/images/person.png" id="foto_dosen" alt=""><span
+						class="status online"></span></a>
+				<h5 class="name"><a href="#" id="dosenName">Dosen</a></h5>
+				<h5 class="position">Dosen</h5>
+			</div>
+		</header>
+		<div class="content">
+			<div class="navigation">
+				<h5 class="title">Navigasi</h5>
+				<ul class="menu js__accordion">
+					<li><a class="waves-effect" href="dosen_index.html"><i
+								class="menu-icon fa fa-home"></i><span>Halaman
+								Utama</span></a></li>
+					<li><a class="waves-effect" href="dosen.html"><i class="menu-icon fa fa-list"></i><span>Managemen
+								Penelitian</span></a></li>
+					<li class="current"><a class="waves-effect" href="dosen_profil.html"><i
+								class="menu-icon fa fa-user"></i><span>Profil</span></a></li>
+					<li><a class="waves-effect" href="#" onclick="logout()"><i
+								class="menu-icon fa fa-sign-out"></i><span>Logout</span></a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div class="fixed-navbar">
+		<div class="pull-left">
+			<button type="button"
+				class="menu-mobile-button glyphicon glyphicon-menu-hamburger js__menu_mobile"></button>
+			<h1 class="page-title">Profil Dosen</h1>
+		</div>
+		<div class="pull-right">
+			<div class="ico-item fa fa-arrows-alt js__full_screen"></div>
+			<a href="#" class="ico-item fa fa-sign-out" onclick="logout()"></a>
+		</div>
+	</div>
+
+	<div id="wrapper">
+		<div class="main-content">
+			<div class="row small-spacing">
+
+				<!-- CHANGE PASSWORD -->
+				<div class="col-lg-7 col-xs-12">
+					<div class="box-content card">
+						<h4 class="box-title">Ganti Password</h4>
+						<div class="card-content">
+							<form id="changePasswordForm">
+								<div class="form-group">
+									<label for="currentPassword">Password Saat Ini</label>
+									<input type="password" class="form-control" id="currentPassword"
+										placeholder="Masukkan Password Saat Ini" required>
+								</div>
+								<div class="form-group">
+									<label for="newPassword">Password Baru</label>
+									<input type="password" class="form-control" id="newPassword"
+										placeholder="Masukkan Password Baru" required>
+								</div>
+								<div class="form-group">
+									<label for="confirmNewPassword">Konfirmasi Password Baru</label>
+									<input type="password" class="form-control" id="confirmNewPassword"
+										placeholder="Konfirmasi Password Baru" required>
+								</div>
+								<button type="submit" class="btn btn-primary">Ganti Password</button>
+							</form>
+						</div>
+					</div>
+				</div>
+
+				<!-- PROFILE IMAGE -->
+				<div class="col-lg-5 col-xs-12">
+					<div class="box-content card">
+						<h4 class="box-title">Gambar Profil</h4>
+						<div class="card-content">
+							<div class="profile-img-container">
+								<!-- Image Preview -->
+								<img id="profileImagePreview" src="assets/images/person.png" alt="Profile Image"
+									class="profile-img-preview">
+							</div>
+							<form id="uploadImageForm">
+								<div class="form-group">
+									<label for="imageInput">Pilih Foto Baru (Max 1 MB, Format: JPG/PNG)</label>
+									<input type="file" class="form-control" id="imageInput" accept="image/*" required>
+								</div>
+								<button type="submit" class="btn btn-success btn-block">Simpan Foto Profil</button>
+							</form>
+						</div>
+					</div>
+				</div>
+
+			</div>
+
+			<footer class="footer">
+				<ul class="list-inline">
+					<li>2026 © Sistem Penelitian Dosen | Universitas Handayani Makassar.</li>
+				</ul>
+			</footer>
+		</div>
+	</div>
+
+	<!-- Scripts -->
+	<script src="assets/scripts/jquery.min.js"></script>
+	<script src="assets/scripts/modernizr.min.js"></script>
+	<script src="assets/plugin/bootstrap/js/bootstrap.min.js"></script>
+	<script src="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
+	<script src="assets/plugin/nprogress/nprogress.js"></script>
+	<script src="assets/plugin/sweet-alert/sweetalert.min.js"></script>
+	<script src="assets/plugin/waves/waves.min.js"></script>
+	<script src="assets/plugin/fullscreen/jquery.fullscreen-min.js"></script>
+	<script src="assets/block/jquery.blockUI.js"></script>
+	<script src="assets/scripts/main.min.js"></script>
+	<script src="assets/color-switcher/color-switcher.min.js"></script>
+	<script src="assets/block.js"></script>
+
+	<script>
+		$(document).ready(function () {
+			const dosenId = localStorage.getItem('dosen_id');
+			const dosenName = localStorage.getItem('dosen_name');
+			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
+
+			// Fetch current profile image
+			$.get(`/api/dosen`, function (data) {
+				const dosen = data.find(d => d.dosen_id === dosenId);
+				if (dosen && dosen.dosen_image) {
+					const imgUrl = `/api/images/dosen/${dosen.dosen_image}`;
+
+					$('#profileImagePreview').attr('src', imgUrl);
+					$('#foto_dosen').attr('src', imgUrl);
+				}
+			});
+		});
+
+		// ============ CHANGE PASSWORD AJAX ============
+		$('#changePasswordForm').on('submit', function (e) {
+			e.preventDefault();
+			const currentPass = $('#currentPassword').val();
+			const newPass = $('#newPassword').val();
+			const confirmPass = $('#confirmNewPassword').val();
+			const dosenId = localStorage.getItem('dosen_id');
+
+			if (newPass !== confirmPass) {
+				swal("Gagal", "Password baru dan konfirmasi tidak cocok!", "error");
+				return;
+			}
+
+			if (newPass.length < 6) {
+				swal("Peringatan", "Password baru minimal 6 karakter!", "warning");
+				return;
+			}
+
+			blockUI({ message: 'Menyimpan...' });
+
+			$.ajax({
+				url: '/api/dosen/change-password',
+				method: 'PUT',
+				contentType: 'application/json',
+				data: JSON.stringify({
+					dosen_id: dosenId,
+					current_password: currentPass,
+					new_password: newPass
+				}),
+				success: function (response) {
+					$.unblockUI();
+					swal("Berhasil!", response.message, "success");
+					$('#changePasswordForm')[0].reset();
+				},
+				error: function (xhr) {
+					$.unblockUI();
+					swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
+				}
+			});
+		});
+
+		// ============ IMAGE PREVIEW & UPLOAD ============
+		$('#imageInput').on('change', function () {
+			const file = this.files[0];
+			if (file) {
+				// Validation
+				if (!file.type.startsWith('image/')) {
+					swal("Peringatan", "Hanya file gambar yang diizinkan!", "warning");
+					$(this).val('');
+					return;
+				}
+				if (file.size > 1024 * 1024) {
+					swal("Peringatan", "Ukuran file maksimal 1MB!", "warning");
+					$(this).val('');
+					return;
+				}
+
+				// Preview using FileReader
+				const reader = new FileReader();
+				reader.onload = function (e) {
+					$('#profileImagePreview').attr('src', e.target.result);
+				}
+				reader.readAsDataURL(file);
+			}
+		});
+
+
+		$('#uploadImageForm').on('submit', function (e) {
+			e.preventDefault();
+			const fileInput = $('#imageInput')[0];
+			if (!fileInput.files.length) return;
+
+			const formData = new FormData();
+			formData.append('dosen_id', localStorage.getItem('dosen_id'));
+			formData.append('image', fileInput.files[0]);
+
+			blockUI({ message: 'Mengunggah...' });
+
+			$.ajax({
+				url: '/api/dosen/upload-image',
+				method: 'PUT',
+				data: formData,
+				processData: false,
+				contentType: false,
+				success: function (response) {
+					$.unblockUI();
+					swal("Berhasil!", response.message, "success");
+
+					// 1. Update the large image preview
+					const newImageUrl = `/api/images/dosen/${response.image}?t=${new Date().getTime()}`;
+					$('#profileImagePreview').attr('src', newImageUrl);
+
+					// 2. Update the small profile image in the top-left navbar
+					$('#foto_dosen').attr('src', newImageUrl);
+
+					$('#uploadImageForm')[0].reset();
+				},
+				error: function (xhr) {
+					$.unblockUI();
+					swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
+				}
+			});
+		});
+
+
+
+		function logout() {
+			swal({
+				title: "Logout?",
+				text: "Anda akan keluar dari halaman dosen.",
+				type: "warning",
+				showCancelButton: true,
+				confirmButtonColor: "#DD6B55",
+				confirmButtonText: "Ya, Logout!",
+				closeOnConfirm: true
+			}, function () {
+				localStorage.clear();
+				window.location.href = 'index.html';
+			});
+		}
+	</script>
+</body>
+
+</html>

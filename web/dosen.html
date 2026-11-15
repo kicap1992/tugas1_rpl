@@ -107,16 +107,39 @@
 		.history-body {
 			padding: 15px;
 		}
+
+		#modalHistory .modal-body {
+			max-height: calc(100vh - 210px);
+			/* Adjust 210px based on header/footer height */
+			overflow-y: auto;
+		}
+
+		/* Fix for the top-left profile image to be a perfect circle */
+		.header .avatar {
+			width: 65px;
+			height: 65px;
+			display: inline-block;
+			overflow: hidden;
+			border-radius: 50%;
+			vertical-align: middle;
+		}
+
+		.header .avatar img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			/* This ensures the image fills the circle without stretching */
+		}
 	</style>
 </head>
 
 <body>
 	<div class="main-menu">
 		<header class="header">
-			<a href="admin.html" class="logo">UHM</a>
+			<a href="dosen_index.html" class="logo">UHM</a>
 			<button type="button" class="button-close fa fa-times js__menu_close"></button>
 			<div class="user">
-				<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span
+				<a href="#" class="avatar"><img src="assets/images/person.png" id="foto_dosen" alt=""><span
 						class="status online"></span></a>
 				<h5 class="name"><a href="#" id="dosenName">Dosen</a></h5>
 				<h5 class="position">Dosen</h5>
@@ -126,14 +149,22 @@
 			<div class="navigation">
 				<h5 class="title">Navigasi</h5>
 				<ul class="menu js__accordion">
-					<li><a class="waves-effect" href="dosen.html"><i class="menu-icon fa fa-home"></i><span>Halaman
+					<li><a class="waves-effect" href="dosen_index.html"><i
+								class="menu-icon fa fa-home"></i><span>Halaman
 								Utama</span></a></li>
+					<li class="current"><a class="waves-effect" href="dosen.html"><i
+								class="menu-icon fa fa-list"></i><span>Managemen
+								Penelitian</span></a></li>
+					<li><a class="waves-effect" href="dosen_profil.html"><i
+								class="menu-icon fa fa-user"></i><span>Profil</span></a></li>
 					<li><a class="waves-effect" href="#" onclick="logout()"><i
 								class="menu-icon fa fa-sign-out"></i><span>Logout</span></a></li>
 				</ul>
 			</div>
 		</div>
 	</div>
+
+
 
 	<div class="fixed-navbar">
 		<div class="pull-left">
@@ -149,59 +180,56 @@
 
 	<div id="wrapper">
 		<div class="main-content">
+
+			<!-- DASHBOARD STATISTICS -->
 			<div class="row small-spacing">
 				<div class="col-lg-3 col-md-6 col-xs-12">
 					<div class="box-content">
 						<div class="statistics-box with-icon">
-							<i class="ico fa fa-apple text-inverse"></i>
-							<h2 class="counter text-inverse">2561</h2>
-							<p class="text">Some text here</p>
+							<i class="ico fa fa-wpforms text-inverse"></i>
+							<h2 class="counter text-inverse" id="h_jumlah_penelitian">...</h2>
+							<p class="text">Jumlah Penelitian</p>
 						</div>
 					</div>
-					<!-- /.box-content -->
 				</div>
-				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
 				<div class="col-lg-3 col-md-6 col-xs-12">
 					<div class="box-content">
 						<div class="statistics-box with-icon">
-							<i class="ico fa fa-android text-success"></i>
-							<h2 class="counter text-success">3562</h2>
-							<p class="text">Some text here</p>
+							<i class="ico fa fa-check text-success"></i>
+							<h2 class="counter text-success" id="h_penelitian_selesai">...</h2>
+							<p class="text">Penelitian Selesai</p>
 						</div>
 					</div>
-					<!-- /.box-content -->
 				</div>
-				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
 				<div class="col-lg-3 col-md-6 col-xs-12">
 					<div class="box-content">
 						<div class="statistics-box with-icon">
-							<i class="ico fa fa-users text-primary"></i>
-							<h2 class="counter text-primary">283</h2>
-							<p class="text">Some text here</p>
+							<i class="ico fa fa-clock-o text-primary"></i>
+							<h2 class="counter text-primary" id="h_penelitian_berjalan">...</h2>
+							<p class="text">Penelitian Berjalan</p>
 						</div>
 					</div>
-					<!-- /.box-content -->
 				</div>
-				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
 				<div class="col-lg-3 col-md-6 col-xs-12">
 					<div class="box-content">
 						<div class="statistics-box with-icon">
 							<i class="ico fa fa-area-chart text-info"></i>
-							<h2 class="counter text-info">241</h2>
-							<p class="text">Some text here</p>
+							<h2 class="counter text-info" id="h_terakhir_update"
+								style="font-size: 20px; margin-top: 25px;">...</h2>
+							<p class="text">Terakhir Update</p>
 						</div>
 					</div>
-					<!-- /.box-content -->
 				</div>
-				<!-- /.col-lg-3 col-md-6 col-xs-12 -->
 			</div>
-			<!-- .row -->
+
+			<!-- TABLE SECTION -->
 			<div class="row small-spacing">
 				<div class="col-md-12">
 					<div class="box-content">
 
 						<!-- UPDATED HEADER WITH CUSTOM SEARCH -->
-						<header class="panel-heading" style="display: flex; flex-direction: column; gap: 15px;">
+						<header class="panel-heading"
+							style="display: flex; flex-direction: column; gap: 15px; overflow: hidden;">
 							<div style="display: flex; justify-content: space-between; align-items: center;">
 								<h4 class="box-title" style="margin: 0;">Daftar Penelitian</h4>
 								<button class="btn btn-primary btn-xs" onclick="openAddModal()"><i
@@ -226,7 +254,6 @@
 										<option value="">-- Pilih --</option>
 									</select>
 								</div>
-								<!-- Added margin-top: 24px; to align with the inputs -->
 								<div class="col-md-2"
 									style="display: flex; align-items: flex-end; gap: 5px; margin-top: 24px;">
 									<button class="btn btn-info" onclick="applyCustomFilter()" style="flex: 1;"><i
@@ -378,6 +405,25 @@
 	<script src="assets/block.js"></script>
 
 	<script>
+		$(document).ready(function () {
+			const dosenId = localStorage.getItem('dosen_id');
+			const dosenName = localStorage.getItem('dosen_name');
+			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
+
+			// Fetch current profile image
+			$.get(`/api/dosen`, function (data) {
+				const dosen = data.find(d => d.dosen_id === dosenId);
+				if (dosen && dosen.dosen_image) {
+					const imgUrl = `/api/images/dosen/${dosen.dosen_image}`;
+
+					$('#profileImagePreview').attr('src', imgUrl);
+					$('#foto_dosen').attr('src', imgUrl);
+				}
+			});
+		});
+	</script>
+
+	<script>
 		let dataTable;
 		let currentEditFiles = [];
 		let isViewMode = false;
@@ -524,8 +570,50 @@
 						}
 					}
 				],
-				order: [[4, "desc"]]
+				order: [[4, "desc"]],
+				// REPLACED initComplete WITH drawCallback
+				drawCallback: function () {
+					// Get all data from the DataTable instance
+					const data = this.api().rows().data().toArray();
+					updateStatistics(data);
+				}
 			});
+		}
+
+
+
+		// NEW FUNCTION: Calculate and update the dashboard cards
+		function updateStatistics(data) {
+			let total = data.length;
+			let selesai = 0;
+			let berjalan = 0;
+			let latestUpdate = null;
+
+			data.forEach(item => {
+				if (item.status_penelitian === 'Selesai') selesai++;
+				if (item.status_penelitian === 'Berjalan') berjalan++;
+
+				// Find the most recent updated_at date
+				if (item.updated_at) {
+					const itemDate = new Date(item.updated_at);
+					if (!latestUpdate || itemDate > latestUpdate) {
+						latestUpdate = itemDate;
+					}
+				}
+			});
+
+			// Update the DOM elements
+			$('#h_jumlah_penelitian').text(total);
+			$('#h_penelitian_selesai').text(selesai);
+			$('#h_penelitian_berjalan').text(berjalan);
+
+			if (latestUpdate) {
+				// Format to show just the day, month, and year
+				const options = { day: '2-digit', month: 'short', year: 'numeric' };
+				$('#h_terakhir_update').text(latestUpdate.toLocaleDateString('id-ID', options));
+			} else {
+				$('#h_terakhir_update').text('-');
+			}
 		}
 
 		// --- MODAL FUNCTIONS ---

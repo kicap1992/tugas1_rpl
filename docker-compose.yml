@@ -32,6 +32,7 @@ services:
       - DB_PORT=3306
     volumes:
       - ./be/uploads:/app/uploads  # <--- ADD THIS LINE
+      - ./be/images:/app/images  # <--- ADD THIS LINE
 
   phpmyadmin:
     image: phpmyadmin:latest

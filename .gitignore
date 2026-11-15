@@ -2,3 +2,8 @@
 be/uploads/*
 # But do NOT ignore the .gitkeep file
 !be/uploads/.gitkeep
+
+# Ignore all files in uploads
+be/images/dosen/*
+# But do NOT ignore the .gitkeep file
+!be/images/dosen/.gitkeep

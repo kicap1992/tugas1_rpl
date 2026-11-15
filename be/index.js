@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: { fileSize: 1024 * 1024 }, // 1 MB limit
     fileFilter: (req, file, cb) => {
@@ -34,6 +34,38 @@ const upload = multer({
         }
     }
 });
+
+// below is for dosen image upload
+// Ensure images directory exists
+const imageDir = path.join(__dirname, 'images/dosen');
+if (!fs.existsSync(imageDir)) {
+    fs.mkdirSync(imageDir, { recursive: true });
+}
+
+// Multer Config for Image Uploads (Max 1MB, Only Images)
+const imageStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, imageDir),
+    filename: (req, file, cb) => {
+        // Get file extension (e.g., .jpg, .png)
+        const ext = path.extname(file.originalname);
+        // Create unique name: timestamp-dosen_id.ext
+        const uniqueName = `${Date.now()}-${req.body.dosen_id}${ext}`;
+        cb(null, uniqueName);
+    }
+});
+
+const uploadImage = multer({
+    storage: imageStorage,
+    limits: { fileSize: 1024 * 1024 }, // 1 MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Hanya file gambar yang diizinkan!'), false);
+        }
+    }
+});
+// end of dosen image upload
 
 // Database Config
 const db = mysql.createPool({
@@ -93,18 +125,18 @@ const initDB = () => {
     db.query(queryDosen, (err) => {
         if (err) return console.error("Gagal buat tabel dosen:", err);
         console.log("Tabel tb_dosen siap.");
-        
+
         db.query(queryPenelitian, (err) => {
             if (err) return console.error("Gagal buat tabel penelitian:", err);
             console.log("Tabel tb_penelitian siap.");
-            
+
             // Add new columns to existing tb_penelitian if they don't exist yet
             const alterPenelitian = [
                 "ALTER TABLE tb_penelitian ADD COLUMN keterangan TEXT DEFAULT NULL",
                 "ALTER TABLE tb_penelitian ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
                 "ALTER TABLE tb_penelitian ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
             ];
-            
+
             alterPenelitian.forEach(q => {
                 db.query(q, (err) => {
                     // Ignore error if column already exists
@@ -136,14 +168,14 @@ app.post('/login', (req, res) => {
     const query = "SELECT dosen_id, dosen_name FROM tb_dosen WHERE dosen_id = ? AND dosen_password = ?";
     db.query(query, [username, password], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
-        
+
         if (results.length > 0) {
-            return res.json({ 
-                success: true, 
-                role: 'dosen', 
-                dosen_id: results[0].dosen_id, 
+            return res.json({
+                success: true,
+                role: 'dosen',
+                dosen_id: results[0].dosen_id,
                 dosen_name: results[0].dosen_name,
-                message: 'Login Dosen berhasil' 
+                message: 'Login Dosen berhasil'
             });
         } else {
             return res.status(401).json({ success: false, message: 'Username atau password salah!' });
@@ -168,7 +200,7 @@ app.get('/dosen/verify', (req, res) => {
     const query = "SELECT dosen_id, dosen_name FROM tb_dosen WHERE dosen_id = ? AND dosen_name = ?";
     db.query(query, [dosen_id, dosen_name], (err, results) => {
         if (err) return res.status(500).json({ valid: false, error: err.message });
-        
+
         if (results.length > 0) return res.json({ valid: true, message: "Session valid" });
         return res.status(401).json({ valid: false, message: "Invalid session" });
     });
@@ -179,7 +211,7 @@ app.post('/dosen', (req, res) => {
     if (!dosen_id || !dosen_name) return res.status(400).json({ error: "dosen_id dan dosen_name wajib diisi!" });
 
     const query = "INSERT INTO tb_dosen (dosen_id, dosen_name, dosen_password, dosen_image) VALUES (?, ?, '1234567', NULL)";
-    
+
     db.query(query, [dosen_id, dosen_name], (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: "Dosen ID sudah terdaftar!" });
@@ -188,6 +220,73 @@ app.post('/dosen', (req, res) => {
         res.json({ message: "Dosen berhasil ditambahkan!", id: dosen_id });
     });
 });
+
+
+// Change Password
+app.put('/dosen/change-password', (req, res) => {
+    const { dosen_id, current_password, new_password } = req.body;
+
+    if (!dosen_id || !current_password || !new_password) {
+        return res.status(400).json({ error: "Semua field wajib diisi!" });
+    }
+
+    // Verify current password first
+    const verifyQuery = "SELECT dosen_id FROM tb_dosen WHERE dosen_id = ? AND dosen_password = ?";
+    db.query(verifyQuery, [dosen_id, current_password], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        if (results.length === 0) {
+            return res.status(401).json({ error: "Password saat ini salah!" });
+        }
+
+        // Update to new password
+        const updateQuery = "UPDATE tb_dosen SET dosen_password = ? WHERE dosen_id = ?";
+        db.query(updateQuery, [new_password, dosen_id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: "Password berhasil diubah!" });
+        });
+    });
+});
+
+// Upload Profile Image
+app.put('/dosen/upload-image', uploadImage.single('image'), (req, res) => {
+    const { dosen_id } = req.body;
+
+    if (!req.file) {
+        return res.status(400).json({ error: "File gambar tidak ditemukan." });
+    }
+
+    const newImageName = req.file.filename;
+
+    // 1. Get the old image name first
+    const getOldImageQuery = "SELECT dosen_image FROM tb_dosen WHERE dosen_id = ?";
+    db.query(getOldImageQuery, [dosen_id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const oldImageName = results.length > 0 ? results[0].dosen_image : null;
+
+        // 2. Delete the old physical file from disk (if it exists and is not null)
+        if (oldImageName) {
+            const oldFilePath = path.join(imageDir, oldImageName);
+            if (fs.existsSync(oldFilePath)) {
+                fs.unlink(oldFilePath, (unlinkErr) => {
+                    if (unlinkErr) console.error("Gagal menghapus gambar lama:", unlinkErr);
+                    else console.log("Gambar lama dihapus:", oldImageName);
+                });
+            }
+        }
+
+        // 3. Update DB with the new image filename
+        const updateQuery = "UPDATE tb_dosen SET dosen_image = ? WHERE dosen_id = ?";
+        db.query(updateQuery, [newImageName, dosen_id], (errUpdate) => {
+            if (errUpdate) return res.status(500).json({ error: errUpdate.message });
+            res.json({ message: "Foto profil berhasil diperbarui!", image: newImageName });
+        });
+    });
+});
+
+// Serve uploaded profile images
+app.use('/images/dosen', express.static(imageDir));
 
 // ================= PENELITIAN ENDPOINTS =================
 
@@ -225,7 +324,7 @@ app.get('/penelitian/dosen/:dosen_id', (req, res) => {
 // 3. Add Penelitian (Max 3 Files) AND Create Initial Laporan
 app.post('/penelitian', upload.array('files', 3), (req, res) => {
     const { dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan } = req.body;
-    
+
     let hasilPublikasiJson = null;
     if (req.files && req.files.length > 0) {
         hasilPublikasiJson = JSON.stringify(req.files.map(f => f.filename));
@@ -235,10 +334,10 @@ app.post('/penelitian', upload.array('files', 3), (req, res) => {
         INSERT INTO tb_penelitian (dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasil_publikasi) 
         VALUES (?, ?, ?, ?, ?, ?)
     `;
-    
+
     db.query(insertPenelitian, [dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasilPublikasiJson], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
-        
+
         const newId = result.insertId;
 
         // Also insert into tb_laporan for the initial history
@@ -259,7 +358,7 @@ app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
     const { id } = req.params;
     // ONLY extract what is allowed to change
     const { status_penelitian, keterangan, existing_files } = req.body;
-    
+
     db.query("SELECT dosen_id, judul_penelitian, tahun_penelitian, hasil_publikasi FROM tb_penelitian WHERE id = ?", [id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length === 0) return res.status(404).json({ error: "Data tidak ditemukan" });
@@ -314,6 +413,15 @@ app.get('/laporan/:penelitian_id', (req, res) => {
     db.query(query, [req.params.penelitian_id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
+    });
+});
+
+app.get('/laporan/latest/:dosen_id', (req, res) => {
+    const query = "SELECT created_at FROM tb_laporan WHERE dosen_id = ? ORDER BY created_at DESC LIMIT 1";
+    db.query(query, [req.params.dosen_id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length > 0) res.json({ latest: results[0].created_at });
+        else res.json({ latest: null });
     });
 });
 
