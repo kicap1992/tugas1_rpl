@@ -35,8 +35,7 @@ const upload = multer({
     }
 });
 
-// below is for dosen image upload
-// Ensure images directory exists
+// Below is for dosen image upload
 const imageDir = path.join(__dirname, 'images/dosen');
 if (!fs.existsSync(imageDir)) {
     fs.mkdirSync(imageDir, { recursive: true });
@@ -46,9 +45,7 @@ if (!fs.existsSync(imageDir)) {
 const imageStorage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, imageDir),
     filename: (req, file, cb) => {
-        // Get file extension (e.g., .jpg, .png)
         const ext = path.extname(file.originalname);
-        // Create unique name: timestamp-dosen_id.ext
         const uniqueName = `${Date.now()}-${req.body.dosen_id}${ext}`;
         cb(null, uniqueName);
     }
@@ -73,7 +70,8 @@ const db = mysql.createPool({
     user: process.env.DB_USER || 'karan',
     password: process.env.DB_PASSWORD || 'karan456',
     database: process.env.DB_NAME || 'db_penelitian',
-    port: process.env.DB_PORT || 3306
+    port: process.env.DB_PORT || 3306,
+    timezone: '+08:00',
 });
 
 // Initialize Database
@@ -85,8 +83,8 @@ const initDB = () => {
             dosen_name VARCHAR(255) NOT NULL,
             dosen_password VARCHAR(255) NOT NULL DEFAULT '1234567',
             dosen_image VARCHAR(255) DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CONVERT_TZ(NOW(), '+00:00', '+08:00'),
-            updated_at TIMESTAMP DEFAULT CONVERT_TZ(NOW(), '+00:00', '+08:00') ON UPDATE CONVERT_TZ(NOW(), '+00:00', '+08:00')
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
     `;
 
@@ -100,8 +98,8 @@ const initDB = () => {
             status_penelitian ENUM('Berjalan', 'Selesai') NOT NULL,
             keterangan TEXT DEFAULT NULL,
             hasil_publikasi JSON, 
-            created_at TIMESTAMP DEFAULT CONVERT_TZ(NOW(), '+00:00', '+08:00'),
-            updated_at TIMESTAMP DEFAULT CONVERT_TZ(NOW(), '+00:00', '+08:00') ON UPDATE CONVERT_TZ(NOW(), '+00:00', '+08:00'),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             FOREIGN KEY (dosen_id) REFERENCES tb_dosen(dosen_id) ON DELETE CASCADE ON UPDATE CASCADE
         )
     `;
@@ -117,11 +115,23 @@ const initDB = () => {
             status_penelitian ENUM('Berjalan', 'Selesai') NOT NULL,
             keterangan TEXT DEFAULT NULL,
             hasil_publikasi JSON,
-            created_at TIMESTAMP DEFAULT CONVERT_TZ(NOW(), '+00:00', '+08:00'),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (penelitian_id) REFERENCES tb_penelitian(id) ON DELETE CASCADE
         )
     `;
 
+    // 4. Create tb_mahasiswa
+    const queryMahasiswa = `
+        CREATE TABLE IF NOT EXISTS tb_mahasiswa (
+            id_mahasiswa VARCHAR(50) PRIMARY KEY,
+            nama_mahasiswa VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL DEFAULT '1234567',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    `;
+
+    // Chain the creation process safely
     db.query(queryDosen, (err) => {
         if (err) return console.error("Gagal buat tabel dosen:", err);
         console.log("Tabel tb_dosen siap.");
@@ -133,13 +143,12 @@ const initDB = () => {
             // Add new columns to existing tb_penelitian if they don't exist yet
             const alterPenelitian = [
                 "ALTER TABLE tb_penelitian ADD COLUMN keterangan TEXT DEFAULT NULL",
-                "ALTER TABLE tb_penelitian ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-                "ALTER TABLE tb_penelitian ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                "ALTER TABLE tb_penelitian ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP",
+                "ALTER TABLE tb_penelitian ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
             ];
 
             alterPenelitian.forEach(q => {
                 db.query(q, (err) => {
-                    // Ignore error if column already exists
                     if (err && err.code !== 'ER_DUP_FIELDNAME') console.error("Alter error:", err.message);
                 });
             });
@@ -147,9 +156,75 @@ const initDB = () => {
             db.query(queryLaporan, (err) => {
                 if (err) console.error("Gagal buat tabel laporan:", err);
                 else console.log("Tabel tb_laporan siap.");
+
+                db.query(queryMahasiswa, (err) => {
+                    if (err) console.error("Gagal buat tabel mahasiswa:", err);
+                    else console.log("Tabel tb_mahasiswa siap.");
+                    
+                    // Call the trigger function
+                    createTimezoneTriggers();
+                });
             });
         });
     });
+};
+
+// Function to create the +8 hour triggers
+const createTimezoneTriggers = () => {
+    const triggers = [
+        // tb_dosen
+        `DROP TRIGGER IF EXISTS trg_dosen_insert;`,
+        `CREATE TRIGGER trg_dosen_insert BEFORE INSERT ON tb_dosen FOR EACH ROW 
+         BEGIN 
+            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+         END;`,
+        `DROP TRIGGER IF EXISTS trg_dosen_update;`,
+        `CREATE TRIGGER trg_dosen_update BEFORE UPDATE ON tb_dosen FOR EACH ROW 
+         BEGIN 
+            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+         END;`,
+
+        // tb_penelitian
+        `DROP TRIGGER IF EXISTS trg_penelitian_insert;`,
+        `CREATE TRIGGER trg_penelitian_insert BEFORE INSERT ON tb_penelitian FOR EACH ROW 
+         BEGIN 
+            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+         END;`,
+        `DROP TRIGGER IF EXISTS trg_penelitian_update;`,
+        `CREATE TRIGGER trg_penelitian_update BEFORE UPDATE ON tb_penelitian FOR EACH ROW 
+         BEGIN 
+            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+         END;`,
+
+        // tb_laporan
+        `DROP TRIGGER IF EXISTS trg_laporan_insert;`,
+        `CREATE TRIGGER trg_laporan_insert BEFORE INSERT ON tb_laporan FOR EACH ROW 
+         BEGIN 
+            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+         END;`,
+
+        // tb_mahasiswa
+        `DROP TRIGGER IF EXISTS trg_mahasiswa_insert;`,
+        `CREATE TRIGGER trg_mahasiswa_insert BEFORE INSERT ON tb_mahasiswa FOR EACH ROW 
+         BEGIN 
+            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+         END;`,
+        `DROP TRIGGER IF EXISTS trg_mahasiswa_update;`,
+        `CREATE TRIGGER trg_mahasiswa_update BEFORE UPDATE ON tb_mahasiswa FOR EACH ROW 
+         BEGIN 
+            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
+         END;`
+    ];
+
+    triggers.forEach(q => {
+        db.query(q, (err) => {
+            if (err) console.error("Trigger Error:", err.message);
+        });
+    });
+    console.log("Timezone Triggers (+8 Hours) siap.");
 };
 setTimeout(initDB, 5000);
 
@@ -157,7 +232,7 @@ app.get('/', (req, res) => {
     res.send('API Penelitian Dosen berjalan!');
 });
 
-// Login endpoint
+// ================= AUTH ENDPOINTS =================
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
 
@@ -165,28 +240,52 @@ app.post('/login', (req, res) => {
         return res.json({ success: true, role: 'admin', message: 'Login Admin berhasil' });
     }
 
-    const query = "SELECT dosen_id, dosen_name FROM tb_dosen WHERE dosen_id = ? AND dosen_password = ?";
-    db.query(query, [username, password], (err, results) => {
+    // 1. Check Dosen
+    const queryDosen = "SELECT dosen_id, dosen_name FROM tb_dosen WHERE dosen_id = ? AND dosen_password = ?";
+    db.query(queryDosen, [username, password], (err, resultsDosen) => {
         if (err) return res.status(500).json({ error: err.message });
-
-        if (results.length > 0) {
-            return res.json({
-                success: true,
-                role: 'dosen',
-                dosen_id: results[0].dosen_id,
-                dosen_name: results[0].dosen_name,
-                message: 'Login Dosen berhasil'
+        
+        if (resultsDosen.length > 0) {
+            return res.json({ 
+                success: true, 
+                role: 'dosen', 
+                dosen_id: resultsDosen[0].dosen_id, 
+                dosen_name: resultsDosen[0].dosen_name,
+                message: 'Login Dosen berhasil' 
             });
-        } else {
-            return res.status(401).json({ success: false, message: 'Username atau password salah!' });
         }
+
+        // 2. If not Dosen, check Mahasiswa
+        const queryMhs = "SELECT id_mahasiswa, nama_mahasiswa FROM tb_mahasiswa WHERE id_mahasiswa = ? AND password = ?";
+        db.query(queryMhs, [username, password], (err, resultsMhs) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            if (resultsMhs.length > 0) {
+                return res.json({ 
+                    success: true, 
+                    role: 'mahasiswa', 
+                    id_mahasiswa: resultsMhs[0].id_mahasiswa, 
+                    nama_mahasiswa: resultsMhs[0].nama_mahasiswa,
+                    message: 'Login Mahasiswa berhasil' 
+                });
+            }
+
+            // If neither, fail
+            return res.status(401).json({ success: false, message: 'Username atau password salah!' });
+        });
     });
 });
 
 // ================= DOSEN ENDPOINTS =================
 
 app.get('/dosen', (req, res) => {
-    const query = "SELECT dosen_id, dosen_name, dosen_image FROM tb_dosen";
+    const query = `
+        SELECT d.dosen_id, d.dosen_name, d.dosen_image, COUNT(p.id) AS jumlah_penelitian
+        FROM tb_dosen d
+        LEFT JOIN tb_penelitian p ON d.dosen_id = p.dosen_id
+        GROUP BY d.dosen_id
+        ORDER BY d.created_at DESC
+    `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
@@ -221,8 +320,6 @@ app.post('/dosen', (req, res) => {
     });
 });
 
-
-// Change Password
 app.put('/dosen/change-password', (req, res) => {
     const { dosen_id, current_password, new_password } = req.body;
 
@@ -230,7 +327,6 @@ app.put('/dosen/change-password', (req, res) => {
         return res.status(400).json({ error: "Semua field wajib diisi!" });
     }
 
-    // Verify current password first
     const verifyQuery = "SELECT dosen_id FROM tb_dosen WHERE dosen_id = ? AND dosen_password = ?";
     db.query(verifyQuery, [dosen_id, current_password], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -239,7 +335,6 @@ app.put('/dosen/change-password', (req, res) => {
             return res.status(401).json({ error: "Password saat ini salah!" });
         }
 
-        // Update to new password
         const updateQuery = "UPDATE tb_dosen SET dosen_password = ? WHERE dosen_id = ?";
         db.query(updateQuery, [new_password, dosen_id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -248,7 +343,6 @@ app.put('/dosen/change-password', (req, res) => {
     });
 });
 
-// Upload Profile Image
 app.put('/dosen/upload-image', uploadImage.single('image'), (req, res) => {
     const { dosen_id } = req.body;
 
@@ -258,14 +352,12 @@ app.put('/dosen/upload-image', uploadImage.single('image'), (req, res) => {
 
     const newImageName = req.file.filename;
 
-    // 1. Get the old image name first
     const getOldImageQuery = "SELECT dosen_image FROM tb_dosen WHERE dosen_id = ?";
     db.query(getOldImageQuery, [dosen_id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const oldImageName = results.length > 0 ? results[0].dosen_image : null;
 
-        // 2. Delete the old physical file from disk (if it exists and is not null)
         if (oldImageName) {
             const oldFilePath = path.join(imageDir, oldImageName);
             if (fs.existsSync(oldFilePath)) {
@@ -276,7 +368,6 @@ app.put('/dosen/upload-image', uploadImage.single('image'), (req, res) => {
             }
         }
 
-        // 3. Update DB with the new image filename
         const updateQuery = "UPDATE tb_dosen SET dosen_image = ? WHERE dosen_id = ?";
         db.query(updateQuery, [newImageName, dosen_id], (errUpdate) => {
             if (errUpdate) return res.status(500).json({ error: errUpdate.message });
@@ -285,12 +376,81 @@ app.put('/dosen/upload-image', uploadImage.single('image'), (req, res) => {
     });
 });
 
-// Serve uploaded profile images
 app.use('/images/dosen', express.static(imageDir));
+
+// Get Dosen Detail (For the "Detail" modal)
+app.get('/dosen/:dosen_id/detail', (req, res) => {
+    const dosenId = req.params.dosen_id;
+    
+    // 1. Get Dosen Info & Research Count
+    const queryInfo = `
+        SELECT d.dosen_id, d.dosen_name, d.dosen_image, COUNT(p.id) as jumlah_penelitian
+        FROM tb_dosen d
+        LEFT JOIN tb_penelitian p ON d.dosen_id = p.dosen_id
+        WHERE d.dosen_id = ?
+        GROUP BY d.dosen_id
+    `;
+    
+    db.query(queryInfo, [dosenId], (err, infoResults) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (infoResults.length === 0) return res.status(404).json({ error: "Dosen tidak ditemukan" });
+
+        // 2. Get Latest Research
+        const queryLatest = `
+            SELECT judul_penelitian, status_penelitian, keterangan, updated_at 
+            FROM tb_penelitian 
+            WHERE dosen_id = ? 
+            ORDER BY updated_at DESC 
+            LIMIT 1
+        `;
+        
+        db.query(queryLatest, [dosenId], (err, latestResults) => {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            res.json({
+                dosen: infoResults[0],
+                latest_penelitian: latestResults.length > 0 ? latestResults[0] : null
+            });
+        });
+    });
+});
+
+// Reset Dosen Password
+app.put('/dosen/reset-password/:dosen_id', (req, res) => {
+    const dosenId = req.params.dosen_id;
+    const query = "UPDATE tb_dosen SET dosen_password = '1234567' WHERE dosen_id = ?";
+    
+    db.query(query, [dosenId], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ error: "Dosen tidak ditemukan" });
+        res.json({ message: "Password berhasil direset menjadi 1234567!" });
+    });
+});
+
+// ================= MAHASISWA ENDPOINTS =================
+app.get('/mahasiswa', (req, res) => {
+    db.query("SELECT id_mahasiswa, nama_mahasiswa, created_at FROM tb_mahasiswa", (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+app.post('/mahasiswa', (req, res) => {
+    const { id_mahasiswa, nama_mahasiswa } = req.body;
+    if (!id_mahasiswa || !nama_mahasiswa) return res.status(400).json({ error: "ID dan Nama wajib diisi!" });
+
+    const query = "INSERT INTO tb_mahasiswa (id_mahasiswa, nama_mahasiswa, password) VALUES (?, ?, '1234567')";
+    db.query(query, [id_mahasiswa, nama_mahasiswa], (err) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: "ID Mahasiswa sudah terdaftar!" });
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: "Mahasiswa berhasil ditambahkan!" });
+    });
+});
 
 // ================= PENELITIAN ENDPOINTS =================
 
-// 1. Get ALL penelitian (Admin)
 app.get('/penelitian', (req, res) => {
     const { nama, tahun } = req.query;
     let query = `
@@ -312,7 +472,6 @@ app.get('/penelitian', (req, res) => {
     });
 });
 
-// 2. Get penelitian by Dosen ID (Dosen Page)
 app.get('/penelitian/dosen/:dosen_id', (req, res) => {
     const query = "SELECT * FROM tb_penelitian WHERE dosen_id = ? ORDER BY tahun_penelitian DESC";
     db.query(query, [req.params.dosen_id], (err, results) => {
@@ -321,7 +480,6 @@ app.get('/penelitian/dosen/:dosen_id', (req, res) => {
     });
 });
 
-// 3. Add Penelitian (Max 3 Files) AND Create Initial Laporan
 app.post('/penelitian', upload.array('files', 3), (req, res) => {
     const { dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan } = req.body;
 
@@ -340,7 +498,6 @@ app.post('/penelitian', upload.array('files', 3), (req, res) => {
 
         const newId = result.insertId;
 
-        // Also insert into tb_laporan for the initial history
         const insertLaporan = `
             INSERT INTO tb_laporan (penelitian_id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasil_publikasi) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -352,11 +509,8 @@ app.post('/penelitian', upload.array('files', 3), (req, res) => {
     });
 });
 
-
-// 4. Edit Penelitian (Update tb_penelitian, then INSERT new snapshot into tb_laporan)
 app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
     const { id } = req.params;
-    // ONLY extract what is allowed to change
     const { status_penelitian, keterangan, existing_files } = req.body;
 
     db.query("SELECT dosen_id, judul_penelitian, tahun_penelitian, hasil_publikasi FROM tb_penelitian WHERE id = ?", [id], (err, results) => {
@@ -364,10 +518,9 @@ app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
         if (results.length === 0) return res.status(404).json({ error: "Data tidak ditemukan" });
 
         const dosen_id = results[0].dosen_id;
-        const judul_penelitian = results[0].judul_penelitian; // Keep old title
-        const tahun_penelitian = results[0].tahun_penelitian; // Keep old year
+        const judul_penelitian = results[0].judul_penelitian;
+        const tahun_penelitian = results[0].tahun_penelitian;
 
-        // Handle files
         let keptFiles = existing_files ? JSON.parse(existing_files) : [];
         let newFiles = req.files ? req.files.map(f => f.filename) : [];
         let finalFiles = [...keptFiles, ...newFiles];
@@ -375,7 +528,6 @@ app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
         if (finalFiles.length > 3) return res.status(400).json({ error: "Maksimal 3 file publikasi!" });
         let hasilPublikasiJson = finalFiles.length > 0 ? JSON.stringify(finalFiles) : null;
 
-        // 1. Update the main table (Only Status, Keterangan, and Files)
         const updateQuery = `
             UPDATE tb_penelitian 
             SET status_penelitian = ?, keterangan = ?, hasil_publikasi = ? 
@@ -384,7 +536,6 @@ app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
         db.query(updateQuery, [status_penelitian, keterangan, hasilPublikasiJson, id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
 
-            // 2. Insert snapshot into tb_laporan (use old title and year)
             const logQuery = `
                 INSERT INTO tb_laporan (penelitian_id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasil_publikasi)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -397,8 +548,6 @@ app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
     });
 });
 
-// 5. Delete Penelitian (No physical file deletion, just delete DB record)
-// Since ON DELETE CASCADE is applied, deleting this will also delete all tb_laporan related to it
 app.delete('/penelitian/:id', (req, res) => {
     const deleteQuery = "DELETE FROM tb_penelitian WHERE id = ?";
     db.query(deleteQuery, [req.params.id], (err, result) => {
@@ -407,7 +556,6 @@ app.delete('/penelitian/:id', (req, res) => {
     });
 });
 
-// 6. Get Laporan History by Penelitian ID
 app.get('/laporan/:penelitian_id', (req, res) => {
     const query = "SELECT * FROM tb_laporan WHERE penelitian_id = ? ORDER BY created_at DESC";
     db.query(query, [req.params.penelitian_id], (err, results) => {
@@ -425,7 +573,6 @@ app.get('/laporan/latest/:dosen_id', (req, res) => {
     });
 });
 
-// Serve uploaded files
 app.use('/uploads', express.static(uploadDir));
 
 app.listen(3000, () => console.log('API berjalan di port 3000'));

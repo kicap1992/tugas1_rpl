@@ -55,13 +55,13 @@
 <body>
 	<div class="main-menu">
 		<header class="header">
-			<a href="index.html" class="logo">Tugas RPL</a>
+			<a href="index.html" class="logo">UHM</a>
 			<button type="button" class="button-close fa fa-times js__menu_close"></button>
 			<div class="user">
 				<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span
 						class="status online"></span></a>
-				<h5 class="name"><a href="profile.html">Tamu</a></h5>
-				<h5 class="position">Tamu</h5>
+				<h5 class="name"><a href="profile.html">Belum Login</a></h5>
+				<h5 class="position">-</h5>
 			</div>
 			<!-- /.user -->
 		</header>
@@ -105,42 +105,69 @@
 
 	<div id="wrapper">
 		<div class="main-content">
-
-			<!-- ================= NEW CONTENT START ================= -->
+			<!-- DASHBOARD STATISTICS -->
 			<div class="row small-spacing">
-				<div class="col-md-12">
+				<div class="col-lg-3 col-md-6 col-xs-12">
 					<div class="box-content">
-						<header class="panel-heading"
-							style="display: flex; justify-content: space-between; align-items: center;">
-							<h4 class="box-title" style="margin: 0;">Daftar Penelitian Dosen</h4>
-						</header>
-						<div class="panel-body" style="overflow-x: auto;">
-							<!-- DataTables will automatically add a search box here -->
-							<table id="tabelPenelitian" class="table table-striped table-bordered dt-responsive nowrap"
-								width="100%">
-								<thead>
-									<tr>
-										<th>No</th>
-										<th>Nama Dosen</th>
-										<th>Judul Penelitian</th>
-										<th>Tahun</th>
-										<th>Status</th>
-										<th>Hasil Publikasi (PDF)</th>
-									</tr>
-								</thead>
-								<tbody>
-									<!-- Data will be populated via AJAX -->
-								</tbody>
-							</table>
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-wpforms text-inverse"></i>
+							<h2 class="counter text-inverse" id="h_jumlah_penelitian">...</h2>
+							<p class="text">Jumlah Penelitian</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-3 col-md-6 col-xs-12">
+					<div class="box-content">
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-check text-success"></i>
+							<h2 class="counter text-success" id="h_penelitian_selesai">...</h2>
+							<p class="text">Penelitian Selesai</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-3 col-md-6 col-xs-12">
+					<div class="box-content">
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-clock-o text-primary"></i>
+							<h2 class="counter text-primary" id="h_penelitian_berjalan">...</h2>
+							<p class="text">Penelitian Berjalan</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-3 col-md-6 col-xs-12">
+					<div class="box-content">
+						<div class="statistics-box with-icon">
+							<i class="ico fa fa-users text-info"></i>
+							<h2 class="counter text-info" id="h_jumlah_dosen">...</h2>
+							<p class="text">Jumlah Dosen</p>
 						</div>
 					</div>
 				</div>
 			</div>
-			<!-- ================= NEW CONTENT END ================= -->
+
+			<div class="row small-spacing">
+				<div class="col-lg-7 col-xs-12">
+					<div class="box-content card">
+						<h4 class="box-title">Keterangan</h4>
+						<div class="card-content">
+							<p style="text-align: justify;">Selamat datang sistem penelitian dosen. Pada sistem ini dosen di Univertas Handayani Makkasar dapat memuat penelitian mereka dan mengelola penelitian mereka. Para mahasiswa Universitas Handayani Makassar juga dapat melihat semua penelitian yang dilakukan oleh dosen. Dosen dan mahasiswa wajib login untuk mengakses sistem ini. Jika tidak memiliki akun, silahkan daftar terlebih dahulu.</p>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-5 col-xs-12">
+					<div class="box-content card">
+						<h4 class="box-title">Last Updated</h4>
+						<div class="card-content" id="lastUpdateContainer">
+							<!-- Data will be injected by JS -->
+							<p class="text-center text-muted">Memuat data...</p>
+						</div>
+					</div>
+				</div>
+			</div>
 
 			<footer class="footer">
 				<ul class="list-inline">
-					<li>2026 © Tugas RPL.</li>
+					<li>2026 © Sistem Penelitian Dosen | Universitas Handayani Makassar.</li>
 				</ul>
 			</footer>
 		</div>
@@ -166,68 +193,7 @@
 	<script src="assets/scripts/main.min.js"></script>
 	<script src="assets/color-switcher/color-switcher.min.js"></script>
 
-	<!-- ================= CUSTOM SCRIPT FOR INDEX ================= -->
-	<script>
-		$(document).ready(function () {
-			var table = $('#tabelPenelitian').DataTable({
-				"ajax": {
-					"url": "/api/penelitian", // Fetch data from backend
-					"dataSrc": ""
-				},
-				"columns": [
-					{
-						// Give it a class so we can easily find it later
-						"data": null,
-						"className": "row-number",
-						"render": function (data, type, row, meta) {
-							// Initial render (will be updated by the event listener below)
-							return meta.row + meta.settings._iDisplayStart + 1;
-						}
-					},
-					{ "data": "dosen_name" },
-					{ "data": "judul_penelitian" },
-					{ "data": "tahun_penelitian" },
-					{
-						"data": "status_penelitian",
-						"render": function (data) {
-							let badge = data === 'Berjalan' ? 'label-warning' : 'label-success';
-							return `<span class="label ${badge}">${data}</span>`;
-						}
-					},
-					{
-						"data": "hasil_publikasi",
-						"render": function (data, type, row) {
-							if (data) {
-								try {
-									const files = typeof data === 'string' ? JSON.parse(data) : data;
 
-									if (Array.isArray(files) && files.length > 0) {
-										let html = '<ul class="file-list">';
-										files.forEach(f => {
-											html += `<li><a href="/api/uploads/${f}" target="_blank"><i class="fa fa-file-pdf-o text-danger"></i> ${f}</a></li>`;
-										});
-										html += '</ul>';
-										return html;
-									}
-								} catch (e) {
-									console.error("Failed to parse JSON", e);
-								}
-							}
-							return '<span class="text-muted">-</span>';
-						}
-					}
-				],
-				"order": [[3, "asc"]] // Sort by Year (ascending) by default
-			});
-
-			// THIS IS THE FIX: Update the "No" column every time the table is drawn (sorted, searched, paged)
-			table.on('order.dt search.dt draw.dt', function () {
-				table.column(0, { search: 'applied', order: 'applied' }).nodes().each(function (cell, i) {
-					cell.innerHTML = i + 1;
-				});
-			}).draw();
-		});
-	</script>
 </body>
 
 </html>
