@@ -64,6 +64,19 @@ const uploadImage = multer({
 });
 // end of dosen image upload
 
+// Multer Config for CSV Uploads (Store in Memory)
+const csvUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Hanya file CSV yang diizinkan!'), false);
+        }
+    }
+});
+
 // Database Config
 const db = mysql.createPool({
     host: process.env.DB_HOST || 'db',
@@ -159,7 +172,7 @@ const initDB = () => {
                 db.query(queryMahasiswa, (err) => {
                     if (err) console.error("Gagal buat tabel mahasiswa:", err);
                     else console.log("Tabel tb_mahasiswa siap.");
-                    
+
                     // Call the trigger function
                     createTimezoneTriggers();
                 });
@@ -207,10 +220,10 @@ const createTimezoneTriggers = () => {
                 console.error(`Trigger Error [${i}]:`, err.message);
                 // If a drop trigger fails, it means it doesn't exist. We can safely continue.
                 if (!err.message.includes("does not exist")) {
-                   // If it's a create trigger error, log it loudly.
-                   if(queries[i].toUpperCase().startsWith("CREATE")) {
-                       console.error(`Fatal Trigger Error: ${queries[i]}`);
-                   }
+                    // If it's a create trigger error, log it loudly.
+                    if (queries[i].toUpperCase().startsWith("CREATE")) {
+                        console.error(`Fatal Trigger Error: ${queries[i]}`);
+                    }
                 }
             }
             i++;
@@ -238,14 +251,14 @@ app.post('/login', (req, res) => {
     const queryDosen = "SELECT dosen_id, dosen_name FROM tb_dosen WHERE dosen_id = ? AND dosen_password = ?";
     db.query(queryDosen, [username, password], (err, resultsDosen) => {
         if (err) return res.status(500).json({ error: err.message });
-        
+
         if (resultsDosen.length > 0) {
-            return res.json({ 
-                success: true, 
-                role: 'dosen', 
-                dosen_id: resultsDosen[0].dosen_id, 
+            return res.json({
+                success: true,
+                role: 'dosen',
+                dosen_id: resultsDosen[0].dosen_id,
                 dosen_name: resultsDosen[0].dosen_name,
-                message: 'Login Dosen berhasil' 
+                message: 'Login Dosen berhasil'
             });
         }
 
@@ -255,12 +268,12 @@ app.post('/login', (req, res) => {
             if (err) return res.status(500).json({ error: err.message });
 
             if (resultsMhs.length > 0) {
-                return res.json({ 
-                    success: true, 
-                    role: 'mahasiswa', 
-                    id_mahasiswa: resultsMhs[0].id_mahasiswa, 
+                return res.json({
+                    success: true,
+                    role: 'mahasiswa',
+                    id_mahasiswa: resultsMhs[0].id_mahasiswa,
                     nama_mahasiswa: resultsMhs[0].nama_mahasiswa,
-                    message: 'Login Mahasiswa berhasil' 
+                    message: 'Login Mahasiswa berhasil'
                 });
             }
 
@@ -375,7 +388,7 @@ app.use('/images/dosen', express.static(imageDir));
 // Get Dosen Detail (For the "Detail" modal)
 app.get('/dosen/:dosen_id/detail', (req, res) => {
     const dosenId = req.params.dosen_id;
-    
+
     // 1. Get Dosen Info & Research Count
     const queryInfo = `
         SELECT d.dosen_id, d.dosen_name, d.dosen_image, COUNT(p.id) as jumlah_penelitian
@@ -384,7 +397,7 @@ app.get('/dosen/:dosen_id/detail', (req, res) => {
         WHERE d.dosen_id = ?
         GROUP BY d.dosen_id
     `;
-    
+
     db.query(queryInfo, [dosenId], (err, infoResults) => {
         if (err) return res.status(500).json({ error: err.message });
         if (infoResults.length === 0) return res.status(404).json({ error: "Dosen tidak ditemukan" });
@@ -397,10 +410,10 @@ app.get('/dosen/:dosen_id/detail', (req, res) => {
             ORDER BY updated_at DESC 
             LIMIT 1
         `;
-        
+
         db.query(queryLatest, [dosenId], (err, latestResults) => {
             if (err) return res.status(500).json({ error: err.message });
-            
+
             res.json({
                 dosen: infoResults[0],
                 latest_penelitian: latestResults.length > 0 ? latestResults[0] : null
@@ -413,7 +426,7 @@ app.get('/dosen/:dosen_id/detail', (req, res) => {
 app.put('/dosen/reset-password/:dosen_id', (req, res) => {
     const dosenId = req.params.dosen_id;
     const query = "UPDATE tb_dosen SET dosen_password = '1234567' WHERE dosen_id = ?";
-    
+
     db.query(query, [dosenId], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         if (result.affectedRows === 0) return res.status(404).json({ error: "Dosen tidak ditemukan" });
@@ -421,9 +434,78 @@ app.put('/dosen/reset-password/:dosen_id', (req, res) => {
     });
 });
 
+// Import Dosen from CSV
+app.post('/dosen/import-csv', csvUpload.single('csv_file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File CSV tidak ditemukan." });
+
+    const results = [];
+    const stream = require('stream');
+    const bufferStream = new stream.PassThrough();
+    bufferStream.end(req.file.buffer);
+
+    bufferStream
+        .pipe(require('csv-parser')())
+        .on('data', (data) => {
+            // Trim keys and values just in case there are spaces
+            const cleanData = {};
+            for (let key in data) {
+                cleanData[key.trim()] = data[key].trim();
+            }
+            results.push(cleanData);
+        })
+        .on('end', () => {
+            if (results.length === 0) return res.status(400).json({ error: "File CSV kosong." });
+
+            // Prepare bulk insert query
+            // We use INSERT IGNORE to skip duplicates, or you can use ON DUPLICATE KEY UPDATE
+            const values = results.map(r => [r.dosen_id, r.dosen_name]);
+            const query = "INSERT IGNORE INTO tb_dosen (dosen_id, dosen_name, dosen_password, dosen_image) VALUES ?";
+
+            // Map to include default password and null image
+            const finalValues = values.map(v => [v[0], v[1], '1234567', null]);
+
+            db.query(query, [finalValues], (err, result) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                // result.affectedRows tells us how many were actually inserted
+                const insertedCount = result.affectedRows;
+                const skippedCount = finalValues.length - insertedCount;
+
+                res.json({
+                    message: `Import selesai. Berhasil menambahkan ${insertedCount} dosen baru. ${skippedCount} data dilewati karena ID sudah ada.`,
+                    inserted: insertedCount,
+                    skipped: skippedCount
+                });
+            });
+
+        })
+        .on('error', (err) => {
+            res.status(500).json({ error: "Gagal membaca file CSV: " + err.message });
+        });
+});
+
+// Export Dosen to CSV
+app.get('/dosen/export-csv', (req, res) => {
+    const query = "SELECT dosen_id, dosen_name FROM tb_dosen ORDER BY dosen_id ASC";
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const { Parser } = require('json2csv');
+        const fields = ['dosen_id', 'dosen_name'];
+        const json2csvParser = new Parser({ fields });
+        const csv = json2csvParser.parse(results);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment('data_dosen.csv');
+        return res.send(csv);
+    });
+});
+
+
 // ================= MAHASISWA ENDPOINTS =================
 app.get('/mahasiswa', (req, res) => {
-    db.query("SELECT id_mahasiswa, nama_mahasiswa, created_at FROM tb_mahasiswa", (err, results) => {
+    // Update this query
+    db.query("SELECT id_mahasiswa, nama_mahasiswa, created_at, updated_at FROM tb_mahasiswa", (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
@@ -440,6 +522,80 @@ app.post('/mahasiswa', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         res.json({ message: "Mahasiswa berhasil ditambahkan!" });
+    });
+});
+
+// Import Mahasiswa from CSV
+app.post('/mahasiswa/import-csv', csvUpload.single('csv_file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File CSV tidak ditemukan." });
+
+    const results = [];
+    const stream = require('stream');
+    const bufferStream = new stream.PassThrough();
+    bufferStream.end(req.file.buffer);
+
+    bufferStream
+        .pipe(require('csv-parser')())
+        .on('data', (data) => {
+            const cleanData = {};
+            for (let key in data) {
+                cleanData[key.trim()] = data[key].trim();
+            }
+            results.push(cleanData);
+        })
+        .on('end', () => {
+            if (results.length === 0) return res.status(400).json({ error: "File CSV kosong." });
+
+            const values = results.map(r => [r.id_mahasiswa, r.nama_mahasiswa]);
+            const query = "INSERT IGNORE INTO tb_mahasiswa (id_mahasiswa, nama_mahasiswa, password) VALUES ?";
+            
+            // Map to include default password
+            const finalValues = values.map(v => [v[0], v[1], '1234567']);
+
+            db.query(query, [finalValues], (err, result) => {
+                if (err) return res.status(500).json({ error: err.message });
+                
+                const insertedCount = result.affectedRows;
+                const skippedCount = finalValues.length - insertedCount;
+                
+                res.json({ 
+                    message: `Import selesai. ${insertedCount} mahasiswa baru ditambahkan. ${skippedCount} dilewati (ID sudah ada).`,
+                    inserted: insertedCount,
+                    skipped: skippedCount
+                });
+            });
+        })
+        .on('error', (err) => {
+            res.status(500).json({ error: "Gagal membaca file CSV: " + err.message });
+        });
+});
+
+// Export Mahasiswa to CSV
+app.get('/mahasiswa/export-csv', (req, res) => {
+    const query = "SELECT id_mahasiswa, nama_mahasiswa FROM tb_mahasiswa ORDER BY id_mahasiswa ASC";
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const { Parser } = require('json2csv');
+        const fields = ['id_mahasiswa', 'nama_mahasiswa'];
+        const json2csvParser = new Parser({ fields });
+        const csv = json2csvParser.parse(results);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment('data_mahasiswa.csv');
+        return res.send(csv);
+    });
+});
+
+// Reset Mahasiswa Password
+app.put('/mahasiswa/reset-password/:id_mahasiswa', (req, res) => {
+    const mhsId = req.params.id_mahasiswa;
+    const query = "UPDATE tb_mahasiswa SET password = '1234567' WHERE id_mahasiswa = ?";
+    
+    db.query(query, [mhsId], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ error: "Mahasiswa tidak ditemukan" });
+        res.json({ message: "Password berhasil direset menjadi 1234567!" });
     });
 });
 
@@ -567,16 +723,27 @@ app.get('/laporan/latest/:dosen_id', (req, res) => {
     });
 });
 
-// Get Laporan Statistics (Group by Date)
+// Get Laporan Statistics (Group by Date) - Optional filter by dosen_id
 app.get('/laporan/stats/daily', (req, res) => {
-    // We group by DATE(created_at) and count how many entries there are per date
-    const query = `
+    const { dosen_id } = req.query;
+    
+    let query = `
         SELECT DATE(created_at) as date, COUNT(*) as total 
         FROM tb_laporan 
+    `;
+    let params = [];
+
+    if (dosen_id) {
+        query += " WHERE dosen_id = ? ";
+        params.push(dosen_id);
+    }
+
+    query += `
         GROUP BY DATE(created_at) 
         ORDER BY DATE(created_at) ASC
     `;
-    db.query(query, (err, results) => {
+
+    db.query(query, params, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });

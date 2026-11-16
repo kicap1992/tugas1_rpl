@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+	<title>Aplikasi Penelitian Dosen - Manajemen Mahasiswa</title>
+
+	<script>
+        if (localStorage.getItem('admin_auth') !== 'true') {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+
+	<link rel="stylesheet" href="assets/styles/style.min.css">
+	<link rel="stylesheet" href="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.min.css">
+	<link rel="stylesheet" href="assets/plugin/waves/waves.min.css">
+	<link rel="stylesheet" href="assets/plugin/sweet-alert/sweetalert.css">
+	<link rel="stylesheet" href="assets/color-switcher/color-switcher.min.css">
+	<link rel="stylesheet" href="assets/plugin/datatables/media/css/dataTables.bootstrap.min.css">
+	<link rel="stylesheet" href="assets/plugin/datatables/extensions/Responsive/css/responsive.bootstrap.min.css">
+	<style>
+		body { display: none; }
+		/* .dataTables_filter { display: none; } */
+		/* Style for the detail modal image */
+		.detail-img { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #eee; }
+	</style>
+</head>
+
+<body>
+<div class="main-menu">
+	<header class="header">
+		<a href="admin_index.html" class="logo">UHM</a>
+		<button type="button" class="button-close fa fa-times js__menu_close"></button>
+		<div class="user">
+			<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span class="status online"></span></a>
+			<h5 class="name"><a href="#">Admin</a></h5>
+			<h5 class="position">Administrator</h5>
+		</div>
+	</header>
+	<div class="content">
+		<div class="navigation">
+			<h5 class="title">Navigasi</h5>
+			<ul class="menu js__accordion">
+				<li><a class="waves-effect" href="admin_index.html"><i class="menu-icon fa fa-home"></i><span>Halaman Utama</span></a></li>
+				<li><a class="waves-effect" href="admin_list_penelitian.html"><i class="menu-icon fa fa-list"></i><span>List Penelitian</span></a></li>
+				<li><a class="waves-effect" href="admin_manage_dosen.html"><i class="menu-icon fa fa-users"></i><span>Managemen Dosen</span></a></li>
+				<li class="current"><a class="waves-effect" href="admin_manage_mahasiswa.html"><i class="menu-icon fa fa-users"></i><span>Managemen Mahasiswa</span></a></li>
+				<li><a class="waves-effect" href="admin_profile.html"><i class="menu-icon fa fa-user"></i><span>Profil</span></a></li>
+				<li><a class="waves-effect" href="#" onclick="logout()"><i class="menu-icon fa fa-sign-out"></i><span>Logout</span></a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+
+<div class="fixed-navbar">
+	<div class="pull-left">
+		<button type="button" class="menu-mobile-button glyphicon glyphicon-menu-hamburger js__menu_mobile"></button>
+		<h1 class="page-title">Manajemen Mahasiswa</h1>
+	</div>
+	<div class="pull-right">
+		<div class="ico-item fa fa-arrows-alt js__full_screen"></div>
+		<a href="#" class="ico-item fa fa-sign-out" onclick="logout()"></a>
+	</div>
+</div>
+
+<div id="wrapper">
+	<div class="main-content">
+		
+		<!-- STATISTICS -->
+		<div class="row small-spacing">
+			<div class="col-lg-3 col-md-6 col-xs-12">
+				<div class="box-content">
+					<div class="statistics-box with-icon">
+						<i class="ico fa fa-wpforms text-inverse"></i>
+						<h2 class="counter text-inverse" id="h_jumlah_penelitian">...</h2>
+						<p class="text">Jumlah Penelitian</p>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-md-6 col-xs-12">
+				<div class="box-content">
+					<div class="statistics-box with-icon">
+						<i class="ico fa fa-check text-success"></i>
+						<h2 class="counter text-success" id="h_penelitian_selesai">...</h2>
+						<p class="text">Penelitian Selesai</p>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-md-6 col-xs-12">
+				<div class="box-content">
+					<div class="statistics-box with-icon">
+						<i class="ico fa fa-graduation-cap text-info"></i>
+						<h2 class="counter text-info" id="h_jumlah_mahasiswa">...</h2>
+						<p class="text">Jumlah Mahasiswa</p>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-3 col-md-6 col-xs-12">
+				<div class="box-content">
+					<div class="statistics-box with-icon">
+						<i class="ico fa fa-clock-o text-primary"></i>
+						<h2 class="counter text-primary" id="h_update" style="font-size: 20px;">...</h2>
+						<p class="text">Update Terakhir</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- TABLE -->
+		<div class="row small-spacing">
+			<div class="col-md-12">
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						<h3 class="panel-title">Daftar Mahasiswa</h3>
+						<div class="pull-right">
+							<button class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalImportCSV">
+								<i class="fa fa-upload"></i> Import CSV
+							</button>
+							<button class="btn btn-info btn-sm" onclick="exportCSV()">
+								<i class="fa fa-download"></i> Export CSV
+							</button>
+							<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalAddMahasiswa">
+								<i class="fa fa-plus"></i> Tambah Mahasiswa
+							</button>
+						</div>
+						<div class="clearfix"></div>
+					</div>
+					<div class="panel-body">
+						<table id="tabelMahasiswa" class="table table-striped table-bordered dt-responsive nowrap" width="100%">
+							<thead>
+								<tr>
+									<th>ID Mahasiswa</th>
+									<th>Nama Mahasiswa</th>
+									<th>Tanggal Daftar</th>
+									<th>Aksi</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<footer class="footer">
+			<ul class="list-inline">
+				<li>2026 © Tugas RPL.</li>
+			</ul>
+		</footer>
+	</div>
+</div>
+
+<!-- MODAL ADD MAHASISWA -->
+<div class="modal fade" id="modalAddMahasiswa" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<form id="formAddMahasiswa">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Tambah Mahasiswa Baru</h4>
+				</div>
+				<div class="modal-body">
+					<div class="form-group">
+						<label for="id_mahasiswa">ID Mahasiswa</label>
+						<input type="text" class="form-control" id="id_mahasiswa" placeholder="Contoh: 2026001" required>
+					</div>
+					<div class="form-group">
+						<label for="nama_mahasiswa">Nama Mahasiswa</label>
+						<input type="text" class="form-control" id="nama_mahasiswa" placeholder="Masukkan nama lengkap" required>
+					</div>
+					<p class="text-muted"><small>*Password default akan di-set otomatis menjadi <b>1234567</b>.</small></p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+					<button type="submit" class="btn btn-primary" id="btnSaveMahasiswa">Simpan</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<!-- MODAL IMPORT CSV -->
+<div class="modal fade" id="modalImportCSV" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<form id="formImportCSV">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Import Data Mahasiswa (CSV)</h4>
+				</div>
+				<div class="modal-body">
+					<p>Pilih file CSV yang memiliki 2 kolom: <b>id_mahasiswa</b> dan <b>nama_mahasiswa</b>. Pastikan baris pertama adalah header.</p>
+					<div class="form-group">
+						<input type="file" class="form-control" id="csv_file" accept=".csv" required>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+					<button type="submit" class="btn btn-success" id="btnImportCSV">Upload & Import</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<!-- MODAL DETAIL MAHASISWA -->
+<div class="modal fade" id="modalDetailMahasiswa" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title">Detail Mahasiswa</h4>
+			</div>
+			<div class="modal-body">
+				<div class="text-center" style="margin-bottom: 20px;">
+					<!-- Default image since tb_mahasiswa doesn't have an image column yet -->
+					<img id="detail_mhs_img" src="assets/images/person.png" alt="Foto Mahasiswa" class="detail-img">
+				</div>
+				<table class="table table-condensed">
+					<tr><th width="150">ID Mahasiswa</th><td>: <span id="detail_mhs_id"></span></td></tr>
+					<tr><th>Nama Mahasiswa</th><td>: <span id="detail_mhs_name"></span></td></tr>
+					<tr><th>Tanggal Daftar</th><td>: <span id="detail_mhs_date"></span></td></tr>
+				</table>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Scripts -->
+<script src="assets/scripts/jquery.min.js"></script>
+<script src="assets/scripts/modernizr.min.js"></script>
+<script src="assets/plugin/bootstrap/js/bootstrap.min.js"></script>
+<script src="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.concat.min.js"></script>
+<script src="assets/plugin/nprogress/nprogress.js"></script>
+<script src="assets/plugin/sweet-alert/sweetalert.min.js"></script>
+<script src="assets/plugin/waves/waves.min.js"></script>
+<script src="assets/plugin/fullscreen/jquery.fullscreen-min.js"></script>
+
+<script src="assets/plugin/datatables/media/js/jquery.dataTables.min.js"></script>
+<script src="assets/plugin/datatables/media/js/dataTables.bootstrap.min.js"></script>
+<script src="assets/plugin/datatables/extensions/Responsive/js/dataTables.responsive.min.js"></script>
+<script src="assets/plugin/datatables/extensions/Responsive/js/responsive.bootstrap.min.js"></script>
+
+<script src="assets/scripts/main.min.js"></script>
+<script src="assets/color-switcher/color-switcher.min.js"></script>
+
+<script>
+	document.body.style.display = 'block';
+
+	// FORMAT DATE HELPER (Reformat ISO String to "DD Mon YYYY")
+	function formatDateShort(dateString) {
+		if (!dateString) return '-';
+		const date = new Date(dateString);
+		return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+	}
+
+	// LOAD STATISTICS
+	function loadStatistics() {
+		$.get('/api/penelitian', function(data) {
+			let total = data.length;
+			let selesai = 0;
+			let latestUpdate = null;
+			
+			data.forEach(item => {
+				if (item.status_penelitian === 'Selesai') selesai++;
+				if (item.updated_at) {
+					const itemDate = new Date(item.updated_at);
+					if (!latestUpdate || itemDate > latestUpdate) latestUpdate = itemDate;
+				}
+			});
+			
+			$('#h_jumlah_penelitian').text(total);
+			$('#h_penelitian_selesai').text(selesai);
+			$('#h_update').text(latestUpdate ? formatDateShort(latestUpdate) : '-');
+		});
+
+		$.get('/api/mahasiswa', function(data) {
+			$('#h_jumlah_mahasiswa').text(data.length);
+		});
+	}
+
+	// LOAD DATATABLE
+	let tableMahasiswa;
+	let allMahasiswaData = []; // We store the data here for the Detail modal
+
+	function loadMahasiswa() {
+		if ($.fn.DataTable.isDataTable('#tabelMahasiswa')) {
+			$('#tabelMahasiswa').DataTable().destroy();
+		}
+
+		tableMahasiswa = $('#tabelMahasiswa').DataTable({
+			"ajax": { 
+				"url": "/api/mahasiswa", 
+				"dataSrc": function(json) {
+					allMahasiswaData = json; // Save data globally
+					return json;
+				}
+			},
+			"columns": [
+				{ "data": "id_mahasiswa" },
+				{ "data": "nama_mahasiswa" },
+				{ 
+					"data": "created_at",
+					"render": function(data) {
+						return formatDateShort(data);
+					}
+				},
+				{ 
+					"data": null,
+					"render": function(data, type, row) {
+						return `
+							<button class="btn btn-info btn-xs" title="Detail" onclick="showDetail('${row.id_mahasiswa}')"><i class="fa fa-eye"></i></button>
+							<button class="btn btn-danger btn-xs" title="Reset Password" onclick="resetPassword('${row.id_mahasiswa}', '${row.nama_mahasiswa}')"><i class="fa fa-key"></i></button>
+						`;
+					}
+				}
+			],
+			"order": [[ 0, "asc" ]]
+		});
+	}
+
+	// SHOW DETAIL MODAL
+	function showDetail(mhsId) {
+		// Find the specific student in our saved data
+		const mhs = allMahasiswaData.find(m => m.id_mahasiswa === mhsId);
+		
+		if (mhs) {
+			$('#detail_mhs_id').text(mhs.id_mahasiswa);
+			$('#detail_mhs_name').text(mhs.nama_mahasiswa);
+			$('#detail_mhs_date').text(formatDateShort(mhs.created_at));
+			
+			// Image logic: Since tb_mahasiswa doesn't have an image column, we default to person.png
+			// If you add a 'mahasiswa_image' column in the future, change this logic.
+			$('#detail_mhs_img').attr('src', 'assets/images/person.png');
+
+			$('#modalDetailMahasiswa').modal('show');
+		}
+	}
+
+	// RESET PASSWORD
+	function resetPassword(mhsId, mhsName) {
+		swal({
+			title: "Reset Password?",
+			text: `Password untuk ${mhsName} akan direset menjadi '1234567'.`,
+			type: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#DD6B55",
+			confirmButtonText: "Ya, Reset!",
+			closeOnConfirm: false
+		}, function() {
+			$.ajax({
+				url: `/api/mahasiswa/reset-password/${mhsId}`,
+				type: 'PUT',
+				success: function(response) {
+					swal("Berhasil!", response.message, "success");
+				},
+				error: function(xhr) {
+					swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan", "error");
+				}
+			});
+		});
+	}
+
+	// HANDLE FORM SUBMIT (ADD MAHASISWA)
+	$('#formAddMahasiswa').on('submit', function(e) {
+		e.preventDefault();
+		const btn = $('#btnSaveMahasiswa');
+		btn.prop('disabled', true).text('Menyimpan...');
+
+		$.ajax({
+			url: '/api/mahasiswa',
+			method: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify({ id_mahasiswa: $('#id_mahasiswa').val(), nama_mahasiswa: $('#nama_mahasiswa').val() }),
+			success: function(response) {
+				$('#modalAddMahasiswa').modal('hide');
+				$('#formAddMahasiswa')[0].reset();
+				swal("Berhasil!", response.message, "success");
+				loadMahasiswa();
+				loadStatistics();
+			},
+			error: function(xhr) {
+				swal("Gagal!", xhr.responseJSON?.error || 'Terjadi kesalahan sistem.', "error");
+			},
+			complete: function() {
+				btn.prop('disabled', false).text('Simpan');
+			}
+		});
+	});
+
+	// --- IMPORT CSV ---
+	$('#formImportCSV').on('submit', function(e) {
+		e.preventDefault();
+		const btn = $('#btnImportCSV');
+		const fileInput = $('#csv_file')[0];
+		if (!fileInput.files.length) return;
+
+		const formData = new FormData();
+		formData.append('csv_file', fileInput.files[0]);
+
+		btn.prop('disabled', true).text('Mengimpor...');
+
+		$.ajax({
+			url: '/api/mahasiswa/import-csv',
+			method: 'POST',
+			data: formData,
+			processData: false,
+			contentType: false,
+			success: function(response) {
+				$('#modalImportCSV').modal('hide');
+				$('#formImportCSV')[0].reset();
+				swal("Berhasil!", response.message, "success");
+				loadMahasiswa();
+				loadStatistics();
+			},
+			error: function(xhr) {
+				swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan saat mengimpor", "error");
+			},
+			complete: function() {
+				btn.prop('disabled', false).text('Upload & Import');
+			}
+		});
+	});
+
+	// --- EXPORT CSV ---
+	function exportCSV() {
+		window.location.href = '/api/mahasiswa/export-csv';
+	}
+
+	// LOGOUT
+	function logout() {
+		swal({
+			title: "Logout?",
+			text: "Anda akan keluar dari halaman admin.",
+			type: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#DD6B55",
+			confirmButtonText: "Ya, Logout!",
+			closeOnConfirm: true
+		}, function() {
+			localStorage.removeItem('admin_auth');
+			window.location.href = 'index.html';
+		});
+	}
+
+	// INIT
+	$(document).ready(function() {
+		loadStatistics();
+		loadMahasiswa();
+	});
+</script>
+</body>
+</html>

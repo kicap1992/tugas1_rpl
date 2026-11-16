@@ -21,10 +21,8 @@
 	<link rel="stylesheet" href="assets/plugin/datatables/media/css/dataTables.bootstrap.min.css">
 	<link rel="stylesheet" href="assets/plugin/datatables/extensions/Responsive/css/responsive.bootstrap.min.css">
 	<style>
-		/* Hide body until auth passes */
 		body { display: none; }
-		/* Hide default DataTables search */
-		.dataTables_filter { display: none; }
+		/* .dataTables_filter { display: none; } */
 		.detail-img { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #eee; }
 	</style>
 </head>
@@ -115,9 +113,17 @@
 				<div class="panel panel-default">
 					<div class="panel-heading">
 						<h3 class="panel-title">Daftar Dosen</h3>
-						<button class="btn btn-primary btn-sm pull-right" data-toggle="modal" data-target="#modalAddDosen">
-							<i class="fa fa-plus"></i> Tambah Dosen
-						</button>
+						<div class="pull-right">
+							<button class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalImportCSV">
+								<i class="fa fa-upload"></i> Import CSV
+							</button>
+							<button class="btn btn-info btn-sm" onclick="exportCSV()">
+								<i class="fa fa-download"></i> Export CSV
+							</button>
+							<button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalAddDosen">
+								<i class="fa fa-plus"></i> Tambah Dosen
+							</button>
+						</div>
 						<div class="clearfix"></div>
 					</div>
 					<div class="panel-body">
@@ -174,6 +180,30 @@
 	</div>
 </div>
 
+<!-- MODAL IMPORT CSV -->
+<div class="modal fade" id="modalImportCSV" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<form id="formImportCSV">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title">Import Data Dosen (CSV)</h4>
+				</div>
+				<div class="modal-body">
+					<p>Pilih file CSV yang memiliki 2 kolom: <b>dosen_id</b> dan <b>dosen_name</b>. Pastikan baris pertama adalah header.</p>
+					<div class="form-group">
+						<input type="file" class="form-control" id="csv_file" accept=".csv" required>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+					<button type="submit" class="btn btn-success" id="btnImportCSV">Upload & Import</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
 <!-- MODAL DETAIL DOSEN -->
 <div class="modal fade" id="modalDetailDosen" tabindex="-1" role="dialog">
 	<div class="modal-dialog" role="document">
@@ -221,7 +251,7 @@
 <script src="assets/color-switcher/color-switcher.min.js"></script>
 
 <script>
-	document.body.style.display = 'block'; // Show body after auth check
+	document.body.style.display = 'block';
 
 	// FORMAT DATE HELPER
 	function formatDate(dateString) {
@@ -238,7 +268,6 @@
 
 	// LOAD STATISTICS
 	function loadStatistics() {
-		// 1. Fetch Penelitian
 		$.get('/api/penelitian', function(data) {
 			let total = data.length;
 			let selesai = 0;
@@ -257,14 +286,12 @@
 			$('#h_update').text(latestUpdate ? formatDateShort(latestUpdate) : '-');
 		});
 
-		// 2. Fetch Dosen Count
 		$.get('/api/dosen', function(data) {
 			$('#h_jumlah_dosen').text(data.length);
 		});
 	}
 
-
-		// LOAD DATATABLE
+	// LOAD DATATABLE
 	let tableDosen;
 	function loadDosen() {
 		if ($.fn.DataTable.isDataTable('#tabelDosen')) {
@@ -272,17 +299,13 @@
 		}
 
 		tableDosen = $('#tabelDosen').DataTable({
-			"ajax": {
-				"url": "/api/dosen",
-				"dataSrc": ""
-			},
+			"ajax": { "url": "/api/dosen", "dataSrc": "" },
 			"columns": [
 				{ "data": "dosen_id" },
 				{ "data": "dosen_name" },
 				{ 
 					"data": "jumlah_penelitian",
 					"render": function(data) {
-						// Display as a badge for better UI
 						return `<span class="label label-primary" style="font-size: 13px;">${data} Penelitian</span>`;
 					}
 				},
@@ -306,14 +329,12 @@
 			const dosen = data.dosen;
 			const p = data.latest_penelitian;
 
-			// Image
 			if (dosen.dosen_image) {
 				$('#detail_img').attr('src', `/api/images/dosen/${dosen.dosen_image}`);
 			} else {
 				$('#detail_img').attr('src', 'assets/images/person.png');
 			}
 
-			// Text Info
 			$('#detail_id').text(dosen.dosen_id);
 			$('#detail_name').text(dosen.dosen_name);
 			$('#detail_jumlah').text(dosen.jumlah_penelitian + " Penelitian");
@@ -375,7 +396,7 @@
 				$('#formAddDosen')[0].reset();
 				swal("Berhasil!", response.message, "success");
 				loadDosen();
-				loadStatistics(); // Update count
+				loadStatistics();
 			},
 			error: function(xhr) {
 				swal("Gagal!", xhr.responseJSON?.error || 'Terjadi kesalahan sistem.', "error");
@@ -385,6 +406,47 @@
 			}
 		});
 	});
+
+	// --- NEW: IMPORT CSV ---
+	$('#formImportCSV').on('submit', function(e) {
+		e.preventDefault();
+		const btn = $('#btnImportCSV');
+		const fileInput = $('#csv_file')[0];
+
+		if (!fileInput.files.length) return;
+
+		const formData = new FormData();
+		formData.append('csv_file', fileInput.files[0]);
+
+		btn.prop('disabled', true).text('Mengimpor...');
+
+		$.ajax({
+			url: '/api/dosen/import-csv',
+			method: 'POST',
+			data: formData,
+			processData: false,
+			contentType: false,
+			success: function(response) {
+				$('#modalImportCSV').modal('hide');
+				$('#formImportCSV')[0].reset();
+				swal("Berhasil!", response.message, "success");
+				loadDosen();
+				loadStatistics();
+			},
+			error: function(xhr) {
+				swal("Gagal", xhr.responseJSON?.error || "Terjadi kesalahan saat mengimpor", "error");
+			},
+			complete: function() {
+				btn.prop('disabled', false).text('Upload & Import');
+			}
+		});
+	});
+
+	// --- NEW: EXPORT CSV ---
+	function exportCSV() {
+		// Redirect to the export endpoint, the browser will automatically download the file
+		window.location.href = '/api/dosen/export-csv';
+	}
 
 	// LOGOUT
 	function logout() {

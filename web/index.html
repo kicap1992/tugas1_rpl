@@ -5,50 +5,27 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-	<meta name="description" content="">
+	<meta name="description" content="Sistem Informasi Penelitian Dosen Universitas Handayani Makassar">
 	<meta name="author" content="">
 
 	<title>Aplikasi Penelitian Dosen - Halaman Utama</title>
 
 	<!-- Main Styles -->
 	<link rel="stylesheet" href="assets/styles/style.min.css">
-
-	<!-- mCustomScrollbar -->
 	<link rel="stylesheet" href="assets/plugin/mCustomScrollbar/jquery.mCustomScrollbar.min.css">
-
-	<!-- Waves Effect -->
 	<link rel="stylesheet" href="assets/plugin/waves/waves.min.css">
-
-	<!-- Sweet Alert -->
 	<link rel="stylesheet" href="assets/plugin/sweet-alert/sweetalert.css">
-
-	<!-- Color Picker -->
 	<link rel="stylesheet" href="assets/color-switcher/color-switcher.min.css">
-
-	<!-- Data Tables -->
 	<link rel="stylesheet" href="assets/plugin/datatables/media/css/dataTables.bootstrap.min.css">
 	<link rel="stylesheet" href="assets/plugin/datatables/extensions/Responsive/css/responsive.bootstrap.min.css">
-
+	
 	<style>
-		/* Custom style for file list inside table */
-		.file-list {
-			list-style: none;
-			padding: 0;
-			margin: 0;
+		body { display: none; }
+		.header .avatar {
+			width: 65px; height: 65px; display: inline-block;
+			overflow: hidden; border-radius: 50%; vertical-align: middle;
 		}
-
-		.file-list li {
-			margin-bottom: 3px;
-		}
-
-		.file-list a {
-			color: #007bff;
-			text-decoration: none;
-		}
-
-		.file-list a:hover {
-			text-decoration: underline;
-		}
+		.header .avatar img { width: 100%; height: 100%; object-fit: cover; }
 	</style>
 </head>
 
@@ -58,54 +35,41 @@
 			<a href="index.html" class="logo">UHM</a>
 			<button type="button" class="button-close fa fa-times js__menu_close"></button>
 			<div class="user">
-				<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span
-						class="status online"></span></a>
-				<h5 class="name"><a href="profile.html">Belum Login</a></h5>
+				<a href="#" class="avatar"><img src="assets/images/person.png" alt=""></a>
+				<h5 class="name"><a href="#">Belum Login</a></h5>
 				<h5 class="position">-</h5>
 			</div>
-			<!-- /.user -->
 		</header>
-		<!-- /.header -->
 		<div class="content">
-
 			<div class="navigation">
 				<h5 class="title">Navigasi</h5>
-				<!-- /.title -->
 				<ul class="menu js__accordion">
-					<li>
-						<a class="waves-effect" href="login.html"><i
-								class="menu-icon fa fa-sign-in"></i><span>Login</span></a>
+					<li class="current">
+						<a class="waves-effect" href="index.html"><i class="menu-icon fa fa-home"></i><span>Halaman Utama</span></a>
 					</li>
-
+					<li>
+						<a class="waves-effect" href="login.html"><i class="menu-icon fa fa-sign-in"></i><span>Login</span></a>
+					</li>
 				</ul>
 			</div>
-			<!-- /.navigation -->
 		</div>
-		<!-- /.content -->
 	</div>
-	<!-- /.main-menu -->
 
 	<div class="fixed-navbar">
 		<div class="pull-left">
-			<button type="button"
-				class="menu-mobile-button glyphicon glyphicon-menu-hamburger js__menu_mobile"></button>
+			<button type="button" class="menu-mobile-button glyphicon glyphicon-menu-hamburger js__menu_mobile"></button>
 			<h1 class="page-title">Halaman Utama</h1>
-			<!-- /.page-title -->
 		</div>
-		<!-- /.pull-left -->
 		<div class="pull-right">
 			<div class="ico-item fa fa-arrows-alt js__full_screen"></div>
-
-			<a href="login.html" class="ico-item fa fa-sign-in"></a>
+			<a href="login.html" class="ico-item fa fa-sign-in" title="Login"></a>
 		</div>
-		<!-- /.pull-right -->
 	</div>
-	<!-- /.fixed-navbar -->
-
 
 	<div id="wrapper">
 		<div class="main-content">
-			<!-- DASHBOARD STATISTICS -->
+			
+			<!-- STATISTICS -->
 			<div class="row small-spacing">
 				<div class="col-lg-3 col-md-6 col-xs-12">
 					<div class="box-content">
@@ -145,12 +109,32 @@
 				</div>
 			</div>
 
+			<!-- CHART SECTION -->
+			<div class="row small-spacing">
+				<div class="col-lg-12 col-xs-12">
+					<div class="box-content card">
+						<h4 class="box-title">Statistik Penelitian</h4>
+						<div class="card-content">
+							<canvas id="penelitianChart" style="width: 100%; height: 400px;"></canvas>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- INFO AND LAST UPDATE -->
 			<div class="row small-spacing">
 				<div class="col-lg-7 col-xs-12">
 					<div class="box-content card">
 						<h4 class="box-title">Keterangan</h4>
 						<div class="card-content">
-							<p style="text-align: justify;">Selamat datang sistem penelitian dosen. Pada sistem ini dosen di Univertas Handayani Makkasar dapat memuat penelitian mereka dan mengelola penelitian mereka. Para mahasiswa Universitas Handayani Makassar juga dapat melihat semua penelitian yang dilakukan oleh dosen. Dosen dan mahasiswa wajib login untuk mengakses sistem ini. Jika tidak memiliki akun, silahkan daftar terlebih dahulu.</p>
+							<p style="text-align: justify;">Selamat datang sistem penelitian dosen. Pada sistem ini
+								dosen di Universitas Handayani Makassar dapat memuat penelitian mereka dan mengelola
+								penelitian mereka. Para mahasiswa Universitas Handayani Makassar juga dapat melihat
+								semua penelitian yang dilakukan oleh dosen. Dosen dan mahasiswa wajib login untuk
+								mengakses sistem ini. Jika tidak memiliki akun, silahkan hubungi admin terlebih dahulu.</p>
+							
+							<br>
+							<a href="login.html" class="btn btn-primary"><i class="fa fa-sign-in"></i> Login Sekarang</a>
 						</div>
 					</div>
 				</div>
@@ -158,7 +142,6 @@
 					<div class="box-content card">
 						<h4 class="box-title">Last Updated</h4>
 						<div class="card-content" id="lastUpdateContainer">
-							<!-- Data will be injected by JS -->
 							<p class="text-center text-muted">Memuat data...</p>
 						</div>
 					</div>
@@ -171,10 +154,9 @@
 				</ul>
 			</footer>
 		</div>
-		<!-- /.main-content -->
-	</div><!--/#wrapper -->
+	</div>
 
-	<!-- Placed at the end of the document so the pages load faster -->
+	<!-- Scripts -->
 	<script src="assets/scripts/jquery.min.js"></script>
 	<script src="assets/scripts/modernizr.min.js"></script>
 	<script src="assets/plugin/bootstrap/js/bootstrap.min.js"></script>
@@ -183,17 +165,125 @@
 	<script src="assets/plugin/sweet-alert/sweetalert.min.js"></script>
 	<script src="assets/plugin/waves/waves.min.js"></script>
 	<script src="assets/plugin/fullscreen/jquery.fullscreen-min.js"></script>
-
-	<!-- Data Tables -->
-	<script src="assets/plugin/datatables/media/js/jquery.dataTables.min.js"></script>
-	<script src="assets/plugin/datatables/media/js/dataTables.bootstrap.min.js"></script>
-	<script src="assets/plugin/datatables/extensions/Responsive/js/dataTables.responsive.min.js"></script>
-	<script src="assets/plugin/datatables/extensions/Responsive/js/responsive.bootstrap.min.js"></script>
-
+	<script src="assets/plugin/chart/chartjs/Chart.bundle.min.js"></script>
 	<script src="assets/scripts/main.min.js"></script>
 	<script src="assets/color-switcher/color-switcher.min.js"></script>
 
+	<script>
+		// --- DATE FORMATTER (ISO String to "DD Mon YYYY, HH.mm") ---
+		function formatDateOnly(dateString) {
+			if (!dateString) return '-';
+			if (!dateString.includes('T')) {
+				let cleanStr = dateString.replace('T', ' ');
+				return cleanStr.substring(0, 16).replace(/-/g, ' ').replace(':', '.');
+			}
+			const date = new Date(dateString);
+			const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+			const day = String(date.getUTCDate()).padStart(2, '0');
+			const month = months[date.getUTCMonth()];
+			const year = date.getUTCFullYear();
+			const hours = String(date.getUTCHours()).padStart(2, '0');
+			const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+			return `${day} ${month} ${year}, ${hours}.${minutes}`;
+		}
 
+		// --- CHART RENDERING ---
+		function renderChart() {
+			$.get('/api/laporan/stats/daily', function (data) {
+				const labels = [];
+				const counts = [];
+
+				data.forEach(item => {
+					const dateObj = new Date(item.date);
+					const formattedDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+					labels.push(formattedDate);
+					counts.push(item.total);
+				});
+
+				const ctx = document.getElementById('penelitianChart').getContext('2d');
+				new Chart(ctx, {
+					type: 'line',
+					data: {
+						labels: labels,
+						datasets: [{
+							label: 'Jumlah Aktivitas Penelitian',
+							data: counts,
+							backgroundColor: 'rgba(54, 162, 235, 0.2)',
+							borderColor: 'rgba(54, 162, 235, 1)',
+							borderWidth: 2,
+							pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+							pointRadius: 4,
+							fill: true,
+							tension: 0.3
+						}]
+					},
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+					}
+				});
+			});
+		}
+
+		$(document).ready(function () {
+			document.body.style.display = 'block';
+
+			// 1. Fetch Penelitian for Stats and Last Update
+			$.get('/api/penelitian', function (data) {
+				let total = data.length;
+				let selesai = 0;
+				let berjalan = 0;
+				let latestUpdateItem = null;
+
+				data.forEach(item => {
+					if (item.status_penelitian === 'Selesai') selesai++;
+					if (item.status_penelitian === 'Berjalan') berjalan++;
+
+					if (item.updated_at) {
+						const itemDate = new Date(item.updated_at);
+						if (!latestUpdateItem || itemDate > new Date(latestUpdateItem.updated_at)) {
+							latestUpdateItem = item;
+						}
+					}
+				});
+
+				$('#h_jumlah_penelitian').text(total);
+				$('#h_penelitian_selesai').text(selesai);
+				$('#h_penelitian_berjalan').text(berjalan);
+
+				const container = $('#lastUpdateContainer');
+				container.empty();
+
+				if (latestUpdateItem) {
+					let badge = latestUpdateItem.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success';
+					container.append(`
+						<div style="margin-bottom: 15px;">
+							<h5 style="margin-top: 0; font-weight: bold; color: #333;">${latestUpdateItem.judul_penelitian}</h5>
+							<p class="text-muted" style="margin-bottom: 5px; font-size: 13px;">
+								<i class="fa fa-user"></i> ${latestUpdateItem.dosen_name} <br>
+								<i class="fa fa-calendar"></i> ${formatDateOnly(latestUpdateItem.updated_at)}
+							</p>
+							<span class="label ${badge}" style="font-size: 12px;">${latestUpdateItem.status_penelitian}</span>
+						</div>
+					`);
+				} else {
+					container.append('<p class="text-center text-muted">Belum ada penelitian.</p>');
+				}
+			}).fail(function() {
+				$('#lastUpdateContainer').html('<p class="text-center text-danger">Gagal memuat data.</p>');
+			});
+
+			// 2. Fetch Dosen Count
+			$.get('/api/dosen', function (data) {
+				$('#h_jumlah_dosen').text(data.length);
+			}).fail(function() {
+				$('#h_jumlah_dosen').text('0');
+			});
+
+			// 3. Render Chart
+			renderChart();
+		});
+	</script>
 </body>
-
 </html>

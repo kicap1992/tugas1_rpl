@@ -152,6 +152,9 @@
 					<li><a class="waves-effect" href="dosen_index.html"><i
 								class="menu-icon fa fa-home"></i><span>Halaman
 								Utama</span></a></li>
+					<li><a class="waves-effect" href="dosen_halaman_penelitian.html"><i
+								class="menu-icon fa fa-file-text"></i><span>Halaman
+								Penelitian</span></a></li>
 					<li class="current"><a class="waves-effect" href="dosen.html"><i
 								class="menu-icon fa fa-list"></i><span>Managemen
 								Penelitian</span></a></li>
@@ -215,7 +218,7 @@
 						<div class="statistics-box with-icon">
 							<i class="ico fa fa-area-chart text-info"></i>
 							<h2 class="counter text-info" id="h_terakhir_update"
-								style="font-size: 20px; margin-top: 25px;">...</h2>
+								style="font-size: 20px;">...</h2>
 							<p class="text">Terakhir Update</p>
 						</div>
 					</div>
@@ -624,7 +627,7 @@
 
 			if (latestUpdate) {
 				const options = { day: '2-digit', month: 'short', year: 'numeric' };
-				$('#h_terakhir_update').text(latestUpdate.toLocaleDateString('id-ID', options));
+				$('#h_terakhir_update').text(formatDateOnly(latestUpdate.toISOString()));
 			} else {
 				$('#h_terakhir_update').text('-');
 			}
