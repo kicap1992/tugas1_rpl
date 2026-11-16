@@ -283,6 +283,79 @@ app.post('/login', (req, res) => {
     });
 });
 
+// --- ADMIN PROFILE ENDPOINTS ---
+
+// Change Admin Password (Hardcoded logic)
+let adminPassword = 'admin'; // In-memory variable. Resets to 'admin' if server restarts.
+
+app.put('/admin/change-password', (req, res) => {
+    const { current_password, new_password } = req.body;
+    if (current_password !== adminPassword) {
+        return res.status(401).json({ error: "Password saat ini salah!" });
+    }
+    adminPassword = new_password;
+    res.json({ message: "Password Admin berhasil diubah!" });
+});
+
+// GET Admin Image (Check if exists)
+app.get('/admin/image', (req, res) => {
+    fs.readdir(imageDir, (err, files) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        // Find file starting with 'admin-profile-'
+        const adminFile = files.find(f => f.startsWith('admin-profile-'));
+        
+        if (adminFile) {
+            res.json({ has_image: true, image: adminFile });
+        } else {
+            res.json({ has_image: false, image: null });
+        }
+    });
+});
+
+// Upload Admin Image (With Auto-Delete & Timestamp)
+const uploadAdminImage = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, imageDir),
+        filename: (req, file, cb) => {
+            const ext = path.extname(file.originalname);
+            // Create unique name: admin-profile-timestamp.ext
+            cb(null, `admin-profile-${Date.now()}${ext}`);
+        }
+    }),
+    limits: { fileSize: 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Hanya file gambar yang diizinkan!'), false);
+    }
+});
+
+app.put('/admin/upload-image', uploadAdminImage.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File gambar tidak ditemukan." });
+
+    const newFileName = req.file.filename;
+
+    // Clean up old admin profile images
+    fs.readdir(imageDir, (err, files) => {
+        if (err) return res.status(500).json({ error: "Gagal membaca direktori gambar." });
+
+        // Loop through files to find old admin-profile-* and delete them
+        files.forEach(file => {
+            if (file.startsWith('admin-profile-') && file !== newFileName) {
+                const oldFilePath = path.join(imageDir, file);
+                fs.unlink(oldFilePath, (err) => {
+                    if (err) console.error("Gagal menghapus gambar admin lama:", err);
+                    else console.log("Gambar admin lama dihapus:", file);
+                });
+            }
+        });
+
+        res.json({ message: "Foto profil Admin berhasil diperbarui!", image: newFileName });
+    });
+});
+
+// --- END ADMIN PROFILE ENDPOINTS ---
+
 // ================= DOSEN ENDPOINTS =================
 
 app.get('/dosen', (req, res) => {

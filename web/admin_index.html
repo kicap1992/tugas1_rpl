@@ -25,6 +25,38 @@
 		body {
 			display: none;
 		}
+
+		/* Image Preview Style */
+		.profile-img-container {
+			text-align: center;
+			margin-bottom: 20px;
+		}
+
+		.profile-img-preview {
+			width: 150px;
+			height: 150px;
+			object-fit: cover;
+			border-radius: 50%;
+			border: 4px solid #fff;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+			margin-bottom: 15px;
+		}
+
+		/* Fix for the top-left profile image to be a perfect circle */
+		.header .avatar {
+			width: 65px;
+			height: 65px;
+			display: inline-block;
+			overflow: hidden;
+			border-radius: 50%;
+			vertical-align: middle;
+		}
+
+		.header .avatar img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
 	</style>
 </head>
 
@@ -34,7 +66,7 @@
 			<a href="admin_index.html" class="logo">UHM</a>
 			<button type="button" class="button-close fa fa-times js__menu_close"></button>
 			<div class="user">
-				<a href="#" class="avatar"><img src="assets/images/person.png" alt=""><span
+				<a href="#" class="avatar"><img src="assets/images/person.png" id="foto_admin" alt=""><span
 						class="status online"></span></a>
 				<h5 class="name"><a href="#">Admin</a></h5>
 				<h5 class="position">Administrator</h5>
@@ -193,6 +225,19 @@
 	<script src="assets/color-switcher/color-switcher.min.js"></script>
 
 	<script>
+
+		$(document).ready(function () {
+			// Fetch the admin image from the backend
+			$.get('/api/admin/image', function(data) {
+				if (data.has_image) {
+					const imgUrl = `/api/images/dosen/${data.image}`;
+					$('#profileImagePreview').attr('src', imgUrl);
+					$('#foto_admin').attr('src', imgUrl);
+				}
+			});
+		});
+
+
 		// Format Dates
 		function formatDate(dateString) {
 			if (!dateString) return '-';
