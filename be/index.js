@@ -71,7 +71,6 @@ const db = mysql.createPool({
     password: process.env.DB_PASSWORD || 'karan456',
     database: process.env.DB_NAME || 'db_penelitian',
     port: process.env.DB_PORT || 3306,
-    timezone: '+08:00',
 });
 
 // Initialize Database
@@ -171,61 +170,56 @@ const initDB = () => {
 
 // Function to create the +8 hour triggers
 const createTimezoneTriggers = () => {
-    const triggers = [
+    // Array of queries to run sequentially
+    const queries = [
         // tb_dosen
         `DROP TRIGGER IF EXISTS trg_dosen_insert;`,
-        `CREATE TRIGGER trg_dosen_insert BEFORE INSERT ON tb_dosen FOR EACH ROW 
-         BEGIN 
-            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-         END;`,
+        `CREATE TRIGGER trg_dosen_insert BEFORE INSERT ON tb_dosen FOR EACH ROW BEGIN SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); END;`,
         `DROP TRIGGER IF EXISTS trg_dosen_update;`,
-        `CREATE TRIGGER trg_dosen_update BEFORE UPDATE ON tb_dosen FOR EACH ROW 
-         BEGIN 
-            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-         END;`,
+        `CREATE TRIGGER trg_dosen_update BEFORE UPDATE ON tb_dosen FOR EACH ROW BEGIN SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); END;`,
 
         // tb_penelitian
         `DROP TRIGGER IF EXISTS trg_penelitian_insert;`,
-        `CREATE TRIGGER trg_penelitian_insert BEFORE INSERT ON tb_penelitian FOR EACH ROW 
-         BEGIN 
-            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-         END;`,
+        `CREATE TRIGGER trg_penelitian_insert BEFORE INSERT ON tb_penelitian FOR EACH ROW BEGIN SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); END;`,
         `DROP TRIGGER IF EXISTS trg_penelitian_update;`,
-        `CREATE TRIGGER trg_penelitian_update BEFORE UPDATE ON tb_penelitian FOR EACH ROW 
-         BEGIN 
-            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-         END;`,
+        `CREATE TRIGGER trg_penelitian_update BEFORE UPDATE ON tb_penelitian FOR EACH ROW BEGIN SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); END;`,
 
         // tb_laporan
         `DROP TRIGGER IF EXISTS trg_laporan_insert;`,
-        `CREATE TRIGGER trg_laporan_insert BEFORE INSERT ON tb_laporan FOR EACH ROW 
-         BEGIN 
-            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-         END;`,
+        `CREATE TRIGGER trg_laporan_insert BEFORE INSERT ON tb_laporan FOR EACH ROW BEGIN SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); END;`,
 
         // tb_mahasiswa
         `DROP TRIGGER IF EXISTS trg_mahasiswa_insert;`,
-        `CREATE TRIGGER trg_mahasiswa_insert BEFORE INSERT ON tb_mahasiswa FOR EACH ROW 
-         BEGIN 
-            SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-         END;`,
+        `CREATE TRIGGER trg_mahasiswa_insert BEFORE INSERT ON tb_mahasiswa FOR EACH ROW BEGIN SET NEW.created_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); END;`,
         `DROP TRIGGER IF EXISTS trg_mahasiswa_update;`,
-        `CREATE TRIGGER trg_mahasiswa_update BEFORE UPDATE ON tb_mahasiswa FOR EACH ROW 
-         BEGIN 
-            SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR);
-         END;`
+        `CREATE TRIGGER trg_mahasiswa_update BEFORE UPDATE ON tb_mahasiswa FOR EACH ROW BEGIN SET NEW.updated_at = DATE_ADD(NOW(), INTERVAL 8 HOUR); END;`
     ];
 
-    triggers.forEach(q => {
-        db.query(q, (err) => {
-            if (err) console.error("Trigger Error:", err.message);
+    // Execute queries sequentially to prevent race conditions
+    let i = 0;
+    const nextQuery = () => {
+        if (i >= queries.length) {
+            console.log("Timezone Triggers (+8 Hours) siap.");
+            return;
+        }
+        db.query(queries[i], (err) => {
+            if (err) {
+                console.error(`Trigger Error [${i}]:`, err.message);
+                // If a drop trigger fails, it means it doesn't exist. We can safely continue.
+                if (!err.message.includes("does not exist")) {
+                   // If it's a create trigger error, log it loudly.
+                   if(queries[i].toUpperCase().startsWith("CREATE")) {
+                       console.error(`Fatal Trigger Error: ${queries[i]}`);
+                   }
+                }
+            }
+            i++;
+            nextQuery();
         });
-    });
-    console.log("Timezone Triggers (+8 Hours) siap.");
+    };
+    nextQuery();
 };
+
 setTimeout(initDB, 5000);
 
 app.get('/', (req, res) => {
@@ -570,6 +564,21 @@ app.get('/laporan/latest/:dosen_id', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (results.length > 0) res.json({ latest: results[0].created_at });
         else res.json({ latest: null });
+    });
+});
+
+// Get Laporan Statistics (Group by Date)
+app.get('/laporan/stats/daily', (req, res) => {
+    // We group by DATE(created_at) and count how many entries there are per date
+    const query = `
+        SELECT DATE(created_at) as date, COUNT(*) as total 
+        FROM tb_laporan 
+        GROUP BY DATE(created_at) 
+        ORDER BY DATE(created_at) ASC
+    `;
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
     });
 });
 

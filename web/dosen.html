@@ -429,6 +429,31 @@
 		let isViewMode = false;
 		let currentViewId = null;
 
+		// --- DATE FORMATTER (ISO String to "DD Mon YYYY, HH.mm") ---
+		function formatDateOnly(dateString) {
+			if (!dateString) return '-';
+
+			// If it's already in "YYYY-MM-DD HH:mm:ss" format, just format it
+			if (!dateString.includes('T')) {
+				// Replace T with space, then remove the seconds
+				let cleanStr = dateString.replace('T', ' ');
+				return cleanStr.substring(0, 16).replace(/-/g, ' ').replace(':', '.');
+			}
+
+			const date = new Date(dateString);
+
+			// Use UTC getters because the DB stores WIB as "UTC" in the ISO string
+			const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+			const day = String(date.getUTCDate()).padStart(2, '0');
+			const month = months[date.getUTCMonth()];
+			const year = date.getUTCFullYear();
+			const hours = String(date.getUTCHours()).padStart(2, '0');
+			const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+
+			return `${day} ${month} ${year}, ${hours}.${minutes}`;
+		}
+
 		// Custom Search Logic
 		$.fn.dataTable.ext.search.push(
 			function (settings, data, dataIndex) {
@@ -471,6 +496,16 @@
 			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
 			if (dosenId) document.getElementById('dosenId').value = dosenId;
 
+			// Fetch current profile image
+			$.get(`/api/dosen`, function (data) {
+				const dosen = data.find(d => d.dosen_id === dosenId);
+				if (dosen && dosen.dosen_image) {
+					const imgUrl = `/api/images/dosen/${dosen.dosen_image}`;
+					$('#profileImagePreview').attr('src', imgUrl);
+					$('#foto_dosen').attr('src', imgUrl);
+				}
+			});
+
 			// 1. Populate Years for the Form (Tambah/Edit)
 			const yearSelect = document.getElementById('tahun_penelitian');
 			for (let y = 2026; y >= 2010; y--) {
@@ -499,16 +534,12 @@
 			// 3. Add Event Listener to "Tahun Dari"
 			$('#searchTahunFrom').on('change', function () {
 				const selectedFrom = $(this).val();
-
-				// Reset "Tahun Sampai"
 				toSelect.innerHTML = '';
 
 				if (selectedFrom) {
-					// Enable "Tahun Sampai" if a start year is selected
 					toSelect.disabled = false;
 					toSelect.innerHTML = '<option value="">-- Pilih --</option>';
 
-					// Populate "Tahun Sampai" starting from the selected "Tahun Dari" up to 2026
 					for (let y = parseInt(selectedFrom); y <= 2026; y++) {
 						let opt = document.createElement('option');
 						opt.value = y;
@@ -516,27 +547,15 @@
 						toSelect.appendChild(opt);
 					}
 				} else {
-					// If "Tahun Dari" is cleared, disable "Tahun Sampai" again
 					toSelect.disabled = true;
 					toSelect.innerHTML = '<option value="">-- Pilih Tahun Dari Dulu --</option>';
 				}
 
-				// Redraw table to clear any previous filter
 				applyCustomFilter();
 			});
 
 			initDataTable(dosenId);
 		});
-
-
-		function formatDate(dateString) {
-			if (!dateString) return '-';
-			const date = new Date(dateString);
-			return date.toLocaleString('id-ID', {
-				day: '2-digit', month: 'short', year: 'numeric',
-				hour: '2-digit', minute: '2-digit'
-			});
-		}
 
 		function initDataTable(dosenId) {
 			dataTable = $('#tablePenelitian').DataTable({
@@ -557,7 +576,9 @@
 					},
 					{
 						data: 'updated_at',
-						render: function (data) { return formatDate(data); }
+						render: function (data) {
+							return formatDateOnly(data);
+						}
 					},
 					{
 						data: null,
@@ -571,18 +592,14 @@
 					}
 				],
 				order: [[4, "desc"]],
-				// REPLACED initComplete WITH drawCallback
 				drawCallback: function () {
-					// Get all data from the DataTable instance
 					const data = this.api().rows().data().toArray();
 					updateStatistics(data);
 				}
 			});
 		}
 
-
-
-		// NEW FUNCTION: Calculate and update the dashboard cards
+		// Calculate and update the dashboard cards
 		function updateStatistics(data) {
 			let total = data.length;
 			let selesai = 0;
@@ -593,7 +610,6 @@
 				if (item.status_penelitian === 'Selesai') selesai++;
 				if (item.status_penelitian === 'Berjalan') berjalan++;
 
-				// Find the most recent updated_at date
 				if (item.updated_at) {
 					const itemDate = new Date(item.updated_at);
 					if (!latestUpdate || itemDate > latestUpdate) {
@@ -602,13 +618,11 @@
 				}
 			});
 
-			// Update the DOM elements
 			$('#h_jumlah_penelitian').text(total);
 			$('#h_penelitian_selesai').text(selesai);
 			$('#h_penelitian_berjalan').text(berjalan);
 
 			if (latestUpdate) {
-				// Format to show just the day, month, and year
 				const options = { day: '2-digit', month: 'short', year: 'numeric' };
 				$('#h_terakhir_update').text(latestUpdate.toLocaleDateString('id-ID', options));
 			} else {
@@ -663,13 +677,12 @@
 					$('#keterangan').val(item.keterangan || '');
 					renderExistingFiles(item.hasil_publikasi);
 
-					$('#lblCreated').text(formatDate(item.created_at));
-					$('#lblUpdated').text(formatDate(item.updated_at));
+					$('#lblCreated').text(formatDateOnly(item.created_at));
+					$('#lblUpdated').text(formatDateOnly(item.updated_at));
 					$('#timestampInfo').show();
 				}
 			});
 		}
-
 
 		function editPenelitian(id) {
 			resetModal();
@@ -677,7 +690,6 @@
 			$('#penelitianId').val(id);
 			$('#modalPenelitian').modal('show');
 
-			// Disable Judul and Tahun for Edit mode
 			$('#judul_penelitian').prop('disabled', true);
 			$('#tahun_penelitian').prop('disabled', true);
 
@@ -692,8 +704,6 @@
 				}
 			});
 		}
-
-
 
 		function renderExistingFiles(filesData) {
 			if (Array.isArray(filesData)) {
@@ -771,7 +781,7 @@
 							<div class="history-header">
 								Update #${data.length - index} 
 								<span class="pull-right text-muted" style="font-size: 12px; font-weight: normal;">
-									${formatDate(log.created_at)}
+									${formatDateOnly(log.created_at)}
 								</span>
 							</div>
 							<div class="history-body">
@@ -930,6 +940,7 @@
 			});
 		}
 	</script>
+
 
 </body>
 
