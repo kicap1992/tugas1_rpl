@@ -7,6 +7,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 	<title>Aplikasi Penelitian Dosen - Profil Admin</title>
 
+	<link rel="icon" href="assets/images/icon.png" type="image/x-icon">
+
 	<script>
 		if (localStorage.getItem('admin_auth') !== 'true') {
 			localStorage.clear();
@@ -167,6 +169,7 @@
 				}
 			});
 		});
+
 
 		// ============ CHANGE PASSWORD AJAX ============
 		$('#changePasswordForm').on('submit', function (e) {

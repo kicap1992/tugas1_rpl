@@ -6,6 +6,7 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 	<title>Aplikasi Penelitian Dosen - Halaman Penelitian Dosen</title>
+	<link rel="icon" href="assets/images/icon.png" type="image/x-icon">
 
 	<script>
 		(async function checkAuth() {
@@ -217,8 +218,7 @@
 					<div class="box-content">
 						<div class="statistics-box with-icon">
 							<i class="ico fa fa-area-chart text-info"></i>
-							<h2 class="counter text-info" id="h_terakhir_update"
-								style="font-size: 20px;">...</h2>
+							<h2 class="counter text-info" id="h_terakhir_update" style="font-size: 15px;">...</h2>
 							<p class="text">Terakhir Update</p>
 						</div>
 					</div>
@@ -295,7 +295,7 @@
 		</div>
 	</div>
 
-	<!-- Modal Penelitian (Add/Edit/View) -->
+	<!-- Modal Penelitian (Add/Edit) -->
 	<div class="modal fade" id="modalPenelitian" tabindex="-1" role="dialog" aria-labelledby="modalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
@@ -319,6 +319,15 @@
 							<select class="form-control" id="tahun_penelitian" required>
 								<option value="">-- Pilih Tahun --</option>
 							</select>
+						</div>
+
+						<div class="form-group">
+							<label>Anggota Penelitian (Opsional)</label>
+							<div id="anggotaContainer"></div>
+							<button type="button" class="btn btn-default btn-xs" id="btnTambahAnggota"
+								onclick="addAnggotaInput()"><i class="fa fa-plus"></i> Tambah Anggota</button>
+							<small class="help-block">Isi nama anggota jika ada. Kosongkan jika penelitian dikerjakan
+								sendiri.</small>
 						</div>
 
 						<div class="form-group">
@@ -357,11 +366,69 @@
 					</form>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-info pull-left" id="btnHistory" style="display: none;"
-						onclick="viewHistory()"><i class="fa fa-history"></i> Riwayat Laporan</button>
 					<button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
 					<button type="button" class="btn btn-primary" id="btnSave"
 						onclick="savePenelitian()">Simpan</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal Lihat Penelitian (Read-Only) -->
+	<div class="modal fade" id="modalViewPenelitian" tabindex="-1" role="dialog" aria-labelledby="modalViewLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title" id="modalViewLabel">Lihat Penelitian</h4>
+				</div>
+				<div class="modal-body">
+					<table class="table table-condensed" style="margin-bottom: 0;">
+						<tr>
+							<td width="140"><strong>Judul Penelitian</strong></td>
+							<td>: <span id="v_judul"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Tahun</strong></td>
+							<td>: <span id="v_tahun"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Status</strong></td>
+							<td>: <span id="v_status"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Anggota</strong></td>
+							<td>
+								<ul id="v_anggota" style="margin:0; padding-left:20px;"></ul>
+							</td>
+						</tr>
+						<tr>
+							<td><strong>Keterangan</strong></td>
+							<td>: <span id="v_keterangan"></span></td>
+						</tr>
+						<tr>
+							<td><strong>File Publikasi</strong></td>
+							<td>
+								<div id="v_files"></div>
+							</td>
+						</tr>
+						<tr>
+							<td><strong>Dibuat</strong></td>
+							<td>: <span id="v_created"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Terakhir Diubah</strong></td>
+							<td>: <span id="v_updated"></span></td>
+						</tr>
+					</table>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-info pull-left" onclick="viewHistoryFromView()">
+						<i class="fa fa-history"></i> Riwayat Laporan
+					</button>
+					<button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
 				</div>
 			</div>
 		</div>
@@ -413,23 +480,35 @@
 			const dosenName = localStorage.getItem('dosen_name');
 			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
 
-			// Fetch current profile image
-			$.get(`/api/dosen`, function (data) {
-				const dosen = data.find(d => d.dosen_id === dosenId);
-				if (dosen && dosen.dosen_image) {
-					const imgUrl = `/api/images/dosen/${dosen.dosen_image}`;
+			// Fetch current profile image using the FAST single-record API
+			if (dosenId) {
+				$.get(`/api/dosen/cek/${dosenId}`, function (dosen) {
+					console.log("Fetched dosen data:", dosen);
+					console.log("Dosen Image:", dosen.dosen_image);
+					if (dosen && dosen.dosen_image) {
+						const imgUrl = `/api/images/dosen/${dosen.dosen_image}?t=${new Date().getTime()}`;
+						$('#profileImagePreview').attr('src', imgUrl);
+						$('#foto_dosen').attr('src', imgUrl);
+					}
+				}).fail(function (xhr) {
+					console.error("Gagal memuat data dosen:", xhr.responseJSON?.error);
+					// If the ID is invalid, log them out
+					if (xhr.status === 404) {
+						swal("Sesi Berakhir", "Data dosen tidak ditemukan. Silakan login kembali.", "warning");
+						setTimeout(() => {
+							localStorage.clear();
+							window.location.href = 'index.html';
+						}, 2000);
+					}
+				});
+			}
 
-					$('#profileImagePreview').attr('src', imgUrl);
-					$('#foto_dosen').attr('src', imgUrl);
-				}
-			});
 		});
 	</script>
 
 	<script>
 		let dataTable;
 		let currentEditFiles = [];
-		let isViewMode = false;
 		let currentViewId = null;
 
 		// --- DATE FORMATTER (ISO String to "DD Mon YYYY, HH.mm") ---
@@ -633,6 +712,74 @@
 			}
 		}
 
+		// --- ANGGOTA PENELITIAN ---
+		function escapeHtml(value) {
+			return String(value ?? '').replace(/[&<>"']/g, char => ({
+				'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+			})[char]);
+		}
+
+		function parseAnggota(value) {
+			if (Array.isArray(value)) return value;
+			if (typeof value === 'string' && value.trim()) {
+				try {
+					const parsed = JSON.parse(value);
+					return Array.isArray(parsed) ? parsed : [];
+				} catch (error) { return []; }
+			}
+			return [];
+		}
+
+		function renderAnggota(data = []) {
+			const anggota = parseAnggota(data);
+			const rows = anggota.length ? anggota : [''];
+			const container = $('#anggotaContainer').empty();
+
+			rows.forEach((nama, index) => {
+				const removeButton = index === 0 ? '' : `
+					<button type="button" class="btn btn-danger" title="Hapus anggota"
+						onclick="removeAnggotaInput(this)"><i class="fa fa-trash"></i></button>`;
+				container.append(`
+					<div class="input-group anggota-row" style="margin-bottom:8px;">
+						<span class="input-group-addon">Anggota ${index + 1}</span>
+						<input type="text" class="form-control anggota-input"
+							placeholder="Nama anggota ${index + 1}" value="${escapeHtml(nama)}">
+						${removeButton}
+					</div>`);
+			});
+		}
+
+		function addAnggotaInput() {
+			const index = $('#anggotaContainer .anggota-row').length + 1;
+			$('#anggotaContainer').append(`
+				<div class="input-group anggota-row" style="margin-bottom:8px;">
+					<span class="input-group-addon">Anggota ${index}</span>
+					<input type="text" class="form-control anggota-input" placeholder="Nama anggota ${index}">
+					<button type="button" class="btn btn-danger" title="Hapus anggota"
+						onclick="removeAnggotaInput(this)"><i class="fa fa-trash"></i></button>
+				</div>`);
+			renumberAnggota();
+		}
+
+		function removeAnggotaInput(button) {
+			$(button).closest('.anggota-row').remove();
+			if (!$('#anggotaContainer .anggota-row').length) renderAnggota([]);
+			else renumberAnggota();
+		}
+
+		function renumberAnggota() {
+			$('#anggotaContainer .anggota-row').each(function (index) {
+				$(this).find('.input-group-addon').text(`Anggota ${index + 1}`);
+				$(this).find('.anggota-input').attr('placeholder', `Nama anggota ${index + 1}`);
+			});
+		}
+
+		function getAnggotaValues() {
+			return $('#anggotaContainer .anggota-input').map(function () {
+				return $(this).val().trim();
+			}).get().filter(Boolean);
+		}
+
 		// --- MODAL FUNCTIONS ---
 
 		function resetModal() {
@@ -642,10 +789,8 @@
 			$('#existingFilesContainer').empty();
 			$('#fileListSection').hide();
 			$('#timestampInfo').hide();
-			$('#btnHistory').hide();
 			currentEditFiles = [];
-			isViewMode = false;
-			currentViewId = null;
+			renderAnggota([]);
 
 			$('#formPenelitian input, #formPenelitian select, #formPenelitian textarea').prop('disabled', false);
 			$('#btnSave').show();
@@ -659,32 +804,67 @@
 		}
 
 		function viewPenelitian(id) {
-			resetModal();
-			isViewMode = true;
 			currentViewId = id;
-			$('#modalLabel').text('Lihat Penelitian');
-
-			$('#formPenelitian input, #formPenelitian select, #formPenelitian textarea').prop('disabled', true);
-			$('#btnSave').hide();
-			$('#uploadSection').hide();
-			$('#btnHistory').show();
-
-			$('#modalPenelitian').modal('show');
 
 			$.get(`/api/penelitian/dosen/${localStorage.getItem('dosen_id')}`, function (data) {
 				const item = data.find(p => p.id === id);
-				if (item) {
-					$('#judul_penelitian').val(item.judul_penelitian);
-					$('#tahun_penelitian').val(item.tahun_penelitian);
-					$('#status_penelitian').val(item.status_penelitian);
-					$('#keterangan').val(item.keterangan || '');
-					renderExistingFiles(item.hasil_publikasi);
+				if (!item) return;
 
-					$('#lblCreated').text(formatDateOnly(item.created_at));
-					$('#lblUpdated').text(formatDateOnly(item.updated_at));
-					$('#timestampInfo').show();
+				// Judul & Tahun
+				$('#v_judul').text(item.judul_penelitian);
+				$('#v_tahun').text(item.tahun_penelitian);
+
+				// Status badge
+				const badge = item.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success';
+				$('#v_status').html(`<span class="label ${badge}">${item.status_penelitian}</span>`);
+
+				// Anggota
+				const anggota = parseAnggota(item.anggota);
+				const $anggota = $('#v_anggota').empty();
+				if (anggota.length) {
+					anggota.forEach(nama => $anggota.append(`<li>${escapeHtml(nama)}</li>`));
+				} else {
+					$anggota.append('<li class="text-muted">-</li>');
 				}
+
+				// Keterangan
+				$('#v_keterangan').text(item.keterangan || '-');
+
+				// Files
+				const $files = $('#v_files').empty();
+				let filesArr = [];
+				try {
+					filesArr = typeof item.hasil_publikasi === 'string'
+						? JSON.parse(item.hasil_publikasi)
+						: (item.hasil_publikasi || []);
+				} catch (e) { filesArr = []; }
+
+				if (filesArr.length) {
+					filesArr.forEach(f => {
+						const displayName = f.substring(f.indexOf('-') + 1);
+						$files.append(`
+							<div class="file-item">
+								<a href="/api/uploads/${f}" target="_blank">
+									<i class="fa fa-file-pdf-o text-danger"></i> ${displayName}
+								</a>
+							</div>`);
+					});
+				} else {
+					$files.append('<span class="text-muted">-</span>');
+				}
+
+				// Timestamps
+				$('#v_created').text(formatDateOnly(item.created_at));
+				$('#v_updated').text(formatDateOnly(item.updated_at));
+
+				$('#modalViewPenelitian').modal('show');
 			});
+		}
+
+		function viewHistoryFromView() {
+			$('#modalViewPenelitian').modal('hide');
+			// Small delay so the first modal fully closes before the next opens
+			setTimeout(() => viewHistory(), 300);
 		}
 
 		function editPenelitian(id) {
@@ -703,6 +883,7 @@
 					$('#tahun_penelitian').val(item.tahun_penelitian);
 					$('#status_penelitian').val(item.status_penelitian);
 					$('#keterangan').val(item.keterangan || '');
+					renderAnggota(item.anggota);
 					renderExistingFiles(item.hasil_publikasi);
 				}
 			});
@@ -730,10 +911,7 @@
 				currentEditFiles.forEach((filename, index) => {
 					let displayName = filename.substring(filename.indexOf('-') + 1);
 
-					let actionBtn = '';
-					if (!isViewMode) {
-						actionBtn = `<button type="button" class="btn btn-danger btn-xs" onclick="removeExistingFile(${index})">Hapus</button>`;
-					}
+					let actionBtn = `<button type="button" class="btn btn-danger btn-xs" onclick="removeExistingFile(${index})">Hapus</button>`;
 
 					container.append(`
 						<div class="file-item">
@@ -756,7 +934,6 @@
 		function viewHistory() {
 			if (!currentViewId) return;
 			$('#historyContainer').empty();
-			$('#modalPenelitian').modal('hide');
 			$('#modalHistory').modal('show');
 
 			$.get(`/api/laporan/${currentViewId}`, function (data) {
@@ -766,6 +943,11 @@
 				}
 
 				data.forEach((log, index) => {
+					const anggotaList = parseAnggota(log.anggota);
+					const anggotaHtml = anggotaList.length
+						? anggotaList.map(nama => `<li>${escapeHtml(nama)}</li>`).join('')
+						: '<span class="text-muted">-</span>';
+
 					let filesHtml = '';
 					if (log.hasil_publikasi) {
 						try {
@@ -790,7 +972,8 @@
 							<div class="history-body">
 								<table class="table table-condensed" style="margin-bottom: 0;">
 									<tr><td width="120"><strong>Status</strong></td><td>: <span class="label ${log.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success'}">${log.status_penelitian}</span></td></tr>
-									<tr><td><strong>Keterangan</strong></td><td>: ${log.keterangan || '-'}</td></tr>
+									<tr><td><strong>Anggota</strong></td><td><ul style="margin:0; padding-left:20px;">${anggotaHtml}</ul></td></tr>
+									<tr><td><strong>Keterangan</strong></td><td>: ${escapeHtml(log.keterangan || '-')}</td></tr>
 									<tr><td><strong>File</strong></td><td>${filesHtml || '-'}</td></tr>
 								</table>
 							</div>
@@ -850,6 +1033,7 @@
 			formData.append('tahun_penelitian', tahun);
 			formData.append('status_penelitian', status);
 			formData.append('keterangan', keterangan);
+			formData.append('anggota', JSON.stringify(getAnggotaValues()));
 
 			if (id) {
 				formData.append('existing_files', JSON.stringify(currentEditFiles));

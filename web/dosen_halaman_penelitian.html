@@ -7,6 +7,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 	<title>Aplikasi Penelitian Dosen - Halaman List Penelitian</title>
 
+	<link rel="icon" href="assets/images/icon.png" type="image/x-icon">
+
 	<script>
 		(async function checkAuth() {
 			const dosenId = localStorage.getItem('dosen_id');
@@ -118,6 +120,23 @@
 			max-height: calc(100vh - 210px);
 			overflow-y: auto;
 		}
+
+		/* Detail table used in Lihat Penelitian */
+		.detail-table td {
+			vertical-align: top;
+			padding: 6px 4px;
+			border-top: none !important;
+		}
+
+		.detail-table td:first-child {
+			width: 150px;
+			color: #555;
+		}
+
+		#v_anggota {
+			margin: 0;
+			padding-left: 18px;
+		}
 	</style>
 </head>
 
@@ -140,7 +159,7 @@
 					<li><a class="waves-effect" href="dosen_index.html"><i
 								class="menu-icon fa fa-home"></i><span>Halaman
 								Utama</span></a></li>
-					<li  class="current"><a class="waves-effect" href="dosen_halaman_penelitian.html"><i
+					<li class="current"><a class="waves-effect" href="dosen_halaman_penelitian.html"><i
 								class="menu-icon fa fa-file-text"></i><span>Halaman
 								Penelitian</span></a></li>
 					<li><a class="waves-effect" href="dosen.html"><i class="menu-icon fa fa-list"></i><span>Managemen
@@ -292,7 +311,7 @@
 		</div>
 	</div>
 
-	<!-- Modal View Penelitian -->
+	<!-- Modal Lihat Penelitian (Read-Only, Text Only) -->
 	<div class="modal fade" id="modalPenelitian" tabindex="-1" role="dialog" aria-labelledby="modalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
@@ -302,36 +321,52 @@
 					<h4 class="modal-title" id="modalLabel">Lihat Penelitian</h4>
 				</div>
 				<div class="modal-body">
-					<form id="formPenelitian">
-						<div class="form-group">
-							<label>Nama Dosen</label>
-							<input type="text" class="form-control" id="view_dosen_name" readonly>
-						</div>
-						<div class="form-group">
-							<label>Judul Penelitian</label>
-							<input type="text" class="form-control" id="view_judul" readonly>
-						</div>
-						<div class="form-group">
-							<label>Tahun Penelitian</label>
-							<input type="text" class="form-control" id="view_tahun" readonly>
-						</div>
-						<div class="form-group">
-							<label>Status Penelitian</label>
-							<input type="text" class="form-control" id="view_status" readonly>
-						</div>
-						<div class="form-group">
-							<label>Keterangan</label>
-							<textarea class="form-control" id="view_keterangan" rows="3" readonly></textarea>
-						</div>
-						<div class="form-group" id="fileListSection" style="display: none;">
-							<label>Daftar File Publikasi:</label>
-							<div id="existingFilesContainer" class="mt-2"></div>
-						</div>
-					</form>
+					<table class="table table-condensed detail-table" style="margin-bottom: 0;">
+						<tr>
+							<td><strong>Nama Dosen</strong></td>
+							<td>: <span id="v_dosen_name"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Judul Penelitian</strong></td>
+							<td>: <span id="v_judul"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Tahun</strong></td>
+							<td>: <span id="v_tahun"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Status</strong></td>
+							<td>: <span id="v_status"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Anggota</strong></td>
+							<td>
+								<ul id="v_anggota"></ul>
+							</td>
+						</tr>
+						<tr>
+							<td><strong>Keterangan</strong></td>
+							<td>: <span id="v_keterangan"></span></td>
+						</tr>
+						<tr id="v_files_row">
+							<td><strong>File Publikasi</strong></td>
+							<td>
+								<div id="v_files"></div>
+							</td>
+						</tr>
+						<tr>
+							<td><strong>Dibuat</strong></td>
+							<td>: <span id="v_created"></span></td>
+						</tr>
+						<tr>
+							<td><strong>Terakhir Diubah</strong></td>
+							<td>: <span id="v_updated"></span></td>
+						</tr>
+					</table>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-info pull-left" id="btnHistory" onclick="viewHistory()"><i
-							class="fa fa-history"></i> Riwayat Laporan</button>
+					<button type="button" class="btn btn-info pull-left" id="btnHistory"
+						onclick="viewHistoryFromView()"><i class="fa fa-history"></i> Riwayat Laporan</button>
 					<button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
 				</div>
 			</div>
@@ -380,25 +415,56 @@
 
 	<script>
 		$(document).ready(function () {
-			const dosenName = localStorage.getItem('dosen_name');
 			const dosenId = localStorage.getItem('dosen_id');
-
+			const dosenName = localStorage.getItem('dosen_name');
 			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
 
-			// Fetch current profile image
-			$.get(`/api/dosen`, function (data) {
-				const dosen = data.find(d => d.dosen_id === dosenId);
-				if (dosen && dosen.dosen_image) {
-					const imgUrl = `/api/images/dosen/${dosen.dosen_image}`;
-					$('#profileImagePreview').attr('src', imgUrl);
-					$('#foto_dosen').attr('src', imgUrl);
-				}
-			});
+			// Fetch current profile image using the FAST single-record API
+			if (dosenId) {
+				$.get(`/api/dosen/cek/${dosenId}`, function (dosen) {
+					console.log("Fetched dosen data:", dosen);
+					console.log("Dosen Image:", dosen.dosen_image);
+					if (dosen && dosen.dosen_image) {
+						const imgUrl = `/api/images/dosen/${dosen.dosen_image}?t=${new Date().getTime()}`;
+						$('#profileImagePreview').attr('src', imgUrl);
+						$('#foto_dosen').attr('src', imgUrl);
+					}
+				}).fail(function (xhr) {
+					console.error("Gagal memuat data dosen:", xhr.responseJSON?.error);
+					// If the ID is invalid, log them out
+					if (xhr.status === 404) {
+						swal("Sesi Berakhir", "Data dosen tidak ditemukan. Silakan login kembali.", "warning");
+						setTimeout(() => {
+							localStorage.clear();
+							window.location.href = 'index.html';
+						}, 2000);
+					}
+				});
+			}
+
 		});
 
 
 		let dataTable;
 		let currentViewId = null;
+
+		// --- HELPERS ---
+		function escapeHtml(value) {
+			return String(value ?? '').replace(/[&<>"']/g, char => ({
+				'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+			})[char]);
+		}
+
+		function parseAnggota(value) {
+			if (Array.isArray(value)) return value;
+			if (typeof value === 'string' && value.trim()) {
+				try {
+					const parsed = JSON.parse(value);
+					return Array.isArray(parsed) ? parsed : [];
+				} catch (error) { return []; }
+			}
+			return [];
+		}
 
 		// --- DATE FORMATTER (ISO String to "DD Mon YYYY, HH.mm") ---
 		function formatDateOnly(dateString) {
@@ -550,12 +616,13 @@
 					let badge = latestUpdateItem.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success';
 					container.append(`
 						<div style="margin-bottom: 15px;">
-							<h5 style="margin-top: 0; font-weight: bold; color: #333;">${latestUpdateItem.judul_penelitian}</h5>
+							<h5 style="margin-top: 0; font-weight: bold; color: #333;">${escapeHtml(latestUpdateItem.judul_penelitian)}</h5>
 							<p class="text-muted" style="margin-bottom: 5px; font-size: 13px;">
-								<i class="fa fa-user"></i> ${latestUpdateItem.dosen_name} <br>
+								<i class="fa fa-user"></i> ${escapeHtml(latestUpdateItem.dosen_name)} <br>
+								<i class="fa fa-users"></i> ${escapeHtml(latestUpdateItem.anggota ? JSON.parse(latestUpdateItem.anggota).join(', ') : '-')} <br>
 								<i class="fa fa-calendar"></i> ${formatDateOnly(latestUpdateItem.updated_at)}
 							</p>
-							<span class="label ${badge}" style="font-size: 12px;">${latestUpdateItem.status_penelitian}</span>
+							<span class="label ${badge}" style="font-size: 12px;">${escapeHtml(latestUpdateItem.status_penelitian)}</span>
 						</div>
 					`);
 				} else {
@@ -602,51 +669,73 @@
 
 		function viewPenelitian(id) {
 			currentViewId = id;
-			// Find the data by making an AJAX call (or we can find it in DataTable data)
+
 			$.get(`/api/penelitian`, function (allData) {
 				const item = allData.find(p => p.id === id);
-				if (item) {
-					$('#view_dosen_name').val(item.dosen_name);
-					$('#view_judul').val(item.judul_penelitian);
-					$('#view_tahun').val(item.tahun_penelitian);
-					$('#view_status').val(item.status_penelitian);
-					$('#view_keterangan').val(item.keterangan || '');
+				if (!item) return;
 
-					renderExistingFilesView(item.hasil_publikasi);
-					$('#modalPenelitian').modal('show');
+				// Basic fields
+				$('#v_dosen_name').text(item.dosen_name || '-');
+				$('#v_judul').text(item.judul_penelitian || '-');
+				$('#v_tahun').text(item.tahun_penelitian || '-');
+
+				// Status badge
+				const badge = item.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success';
+				$('#v_status').html(`<span class="label ${badge}">${escapeHtml(item.status_penelitian)}</span>`);
+
+				// Anggota list
+				const anggota = parseAnggota(item.anggota);
+				const $anggota = $('#v_anggota').empty();
+				if (anggota.length) {
+					anggota.forEach(nama => $anggota.append(`<li>${escapeHtml(nama)}</li>`));
+				} else {
+					$anggota.append('<li class="text-muted">-</li>');
 				}
+
+				// Keterangan
+				$('#v_keterangan').text(item.keterangan || '-');
+
+				// Files
+				const $files = $('#v_files').empty();
+				let filesArr = [];
+				try {
+					filesArr = typeof item.hasil_publikasi === 'string'
+						? JSON.parse(item.hasil_publikasi)
+						: (item.hasil_publikasi || []);
+				} catch (e) { filesArr = []; }
+
+				if (filesArr.length) {
+					$('#v_files_row').show();
+					filesArr.forEach(f => {
+						const displayName = f.substring(f.indexOf('-') + 1);
+						$files.append(`
+							<div class="file-item">
+								<a href="/api/uploads/${f}" target="_blank">
+									<i class="fa fa-file-pdf-o text-danger"></i> ${displayName}
+								</a>
+							</div>`);
+					});
+				} else {
+					$('#v_files_row').show();
+					$files.append('<span class="text-muted">-</span>');
+				}
+
+				// Timestamps
+				$('#v_created').text(formatDateOnly(item.created_at));
+				$('#v_updated').text(formatDateOnly(item.updated_at));
+
+				$('#modalPenelitian').modal('show');
 			});
 		}
 
-		function renderExistingFilesView(filesData) {
-			let currentFiles = [];
-			if (Array.isArray(filesData)) currentFiles = filesData;
-			else if (typeof filesData === 'string') {
-				try { currentFiles = JSON.parse(filesData); } catch (e) { }
-			}
-
-			const container = $('#existingFilesContainer');
-			container.empty();
-
-			if (currentFiles.length > 0) {
-				$('#fileListSection').show();
-				currentFiles.forEach((filename) => {
-					let displayName = filename.substring(filename.indexOf('-') + 1);
-					container.append(`
-						<div class="file-item">
-							<a href="/api/uploads/${filename}" target="_blank"><i class="fa fa-file-pdf-o text-danger"></i> ${displayName}</a>
-						</div>
-					`);
-				});
-			} else {
-				$('#fileListSection').hide();
-			}
+		function viewHistoryFromView() {
+			$('#modalPenelitian').modal('hide');
+			setTimeout(() => viewHistory(), 300);
 		}
 
 		function viewHistory() {
 			if (!currentViewId) return;
 			$('#historyContainer').empty();
-			$('#modalPenelitian').modal('hide');
 			$('#modalHistory').modal('show');
 
 			$.get(`/api/laporan/${currentViewId}`, function (data) {
@@ -656,6 +745,12 @@
 				}
 
 				data.forEach((log, index) => {
+					// Anggota per-version
+					const anggotaList = parseAnggota(log.anggota);
+					const anggotaHtml = anggotaList.length
+						? anggotaList.map(nama => `<li>${escapeHtml(nama)}</li>`).join('')
+						: '<span class="text-muted">-</span>';
+
 					let filesHtml = '';
 					if (log.hasil_publikasi) {
 						try {
@@ -679,8 +774,9 @@
 							</div>
 							<div class="history-body">
 								<table class="table table-condensed" style="margin-bottom: 0;">
-									<tr><td width="120"><strong>Status</strong></td><td>: <span class="label ${log.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success'}">${log.status_penelitian}</span></td></tr>
-									<tr><td><strong>Keterangan</strong></td><td>: ${log.keterangan || '-'}</td></tr>
+									<tr><td width="120"><strong>Status</strong></td><td>: <span class="label ${log.status_penelitian === 'Berjalan' ? 'label-warning' : 'label-success'}">${escapeHtml(log.status_penelitian)}</span></td></tr>
+									<tr><td><strong>Anggota</strong></td><td><ul style="margin:0; padding-left:20px;">${anggotaHtml}</ul></td></tr>
+									<tr><td><strong>Keterangan</strong></td><td>: ${escapeHtml(log.keterangan || '-')}</td></tr>
 									<tr><td><strong>File</strong></td><td>${filesHtml || '-'}</td></tr>
 								</table>
 							</div>

@@ -64,6 +64,38 @@ const uploadImage = multer({
 });
 // end of dosen image upload
 
+// Below is for mahasiswa image upload
+const mahasiswaImageDir = path.join(__dirname, 'images/mahasiswa');
+if (!fs.existsSync(mahasiswaImageDir)) {
+    fs.mkdirSync(mahasiswaImageDir, { recursive: true });
+}
+
+// Multer Config for Image Uploads (Max 1MB, Only Images)
+const mahasiswaImageStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, mahasiswaImageDir),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const uniqueName = `${Date.now()}-${req.body.mahasiswa_id}${ext}`;
+        cb(null, uniqueName);
+    }
+});
+
+const uploadMahasiswaImage = multer({
+    storage: mahasiswaImageStorage,
+    limits: { fileSize: 1024 * 1024 }, // 1 MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Hanya file gambar yang diizinkan!'), false);
+        }
+    }
+});
+// end of mahasiswa image upload
+
+
+
+
 // Multer Config for CSV Uploads (Store in Memory)
 const csvUpload = multer({
     storage: multer.memoryStorage(),
@@ -109,6 +141,7 @@ const initDB = () => {
             tahun_penelitian YEAR NOT NULL,
             status_penelitian ENUM('Berjalan', 'Selesai') NOT NULL,
             keterangan TEXT DEFAULT NULL,
+            anggota JSON DEFAULT NULL,
             hasil_publikasi JSON, 
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -126,6 +159,7 @@ const initDB = () => {
             tahun_penelitian YEAR NOT NULL,
             status_penelitian ENUM('Berjalan', 'Selesai') NOT NULL,
             keterangan TEXT DEFAULT NULL,
+            anggota JSON DEFAULT NULL,
             hasil_publikasi JSON,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (penelitian_id) REFERENCES tb_penelitian(id) ON DELETE CASCADE
@@ -138,6 +172,7 @@ const initDB = () => {
             id_mahasiswa VARCHAR(50) PRIMARY KEY,
             nama_mahasiswa VARCHAR(255) NOT NULL,
             password VARCHAR(255) NOT NULL DEFAULT '1234567',
+            mahasiswa_image VARCHAR(255) DEFAULT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
@@ -372,6 +407,19 @@ app.get('/dosen', (req, res) => {
     });
 });
 
+// Get Single Dosen by ID (Fast check for session validity)
+app.get('/dosen/cek/:dosen_id', (req, res) => {
+    const dosenId = req.params.dosen_id;
+    // Select only the necessary columns
+    db.query("SELECT dosen_id, dosen_name , dosen_image FROM tb_dosen WHERE dosen_id = ?", [dosenId], (err, results) => {
+        if (err) return res.status(500).json({ valid: false, error: err.message });
+        if (results.length === 0) return res.status(404).json({ valid: false, error: "Dosen tidak ditemukan" });
+        
+        // Return the single object, along with valid: true
+        res.json( results[0] );
+    });
+});
+
 app.get('/dosen/verify', (req, res) => {
     const { dosen_id, dosen_name } = req.query;
     if (!dosen_id || !dosen_name) return res.status(400).json({ valid: false, message: "Missing parameters" });
@@ -577,10 +625,21 @@ app.get('/dosen/export-csv', (req, res) => {
 
 // ================= MAHASISWA ENDPOINTS =================
 app.get('/mahasiswa', (req, res) => {
-    // Update this query
-    db.query("SELECT id_mahasiswa, nama_mahasiswa, created_at, updated_at FROM tb_mahasiswa", (err, results) => {
+    // Update this query to include mahasiswa_image
+    db.query("SELECT id_mahasiswa, nama_mahasiswa, mahasiswa_image, created_at, updated_at FROM tb_mahasiswa", (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
+    });
+});
+
+// Get Single Mahasiswa by ID (Fast)
+app.get('/mahasiswa/cek/:id_mahasiswa', (req, res) => {
+    const mhsId = req.params.id_mahasiswa;
+    // Select specific columns needed for the profile page
+    db.query("SELECT id_mahasiswa, nama_mahasiswa, mahasiswa_image FROM tb_mahasiswa WHERE id_mahasiswa = ?", [mhsId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length === 0) return res.status(404).json({ error: "Mahasiswa tidak ditemukan" });
+        res.json(results[0]); // Return just the single object, not an array
     });
 });
 
@@ -595,6 +654,19 @@ app.post('/mahasiswa', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         res.json({ message: "Mahasiswa berhasil ditambahkan!" });
+    });
+});
+
+app.get('/mahasiswa/verify', (req, res) => {
+    const { id_mahasiswa, nama_mahasiswa } = req.query;
+    if (!id_mahasiswa || !nama_mahasiswa) return res.status(400).json({ valid: false, message: "Missing parameters" });
+
+    const query = "SELECT id_mahasiswa, nama_mahasiswa FROM tb_mahasiswa WHERE id_mahasiswa = ? AND nama_mahasiswa = ?";
+    db.query(query, [id_mahasiswa, nama_mahasiswa], (err, results) => {
+        if (err) return res.status(500).json({ valid: false, error: err.message });
+
+        if (results.length > 0) return res.json({ valid: true, message: "Session valid" });
+        return res.status(401).json({ valid: false, message: "Invalid session" });
     });
 });
 
@@ -660,6 +732,29 @@ app.get('/mahasiswa/export-csv', (req, res) => {
     });
 });
 
+app.put('/mahasiswa/change-password', (req, res) => {
+    const { mahasiswa_id, current_password, new_password } = req.body; // Change to mahasiswa_id, current_password, new_password } = req.body;
+
+    if (!mahasiswa_id || !current_password || !new_password) {
+        return res.status(400).json({ error: "Semua field wajib diisi!" });
+    }
+
+    const verifyQuery = "SELECT id_mahasiswa FROM tb_mahasiswa WHERE id_mahasiswa = ? AND password = ?";
+    db.query(verifyQuery, [mahasiswa_id, current_password], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        if (results.length === 0) {
+            return res.status(401).json({ error: "Password saat ini salah!" });
+        }
+
+        const updateQuery = "UPDATE tb_mahasiswa SET password = ? WHERE id_mahasiswa = ?";
+        db.query(updateQuery, [new_password, mahasiswa_id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: "Password berhasil diubah!" });
+        });
+    });
+});
+
 // Reset Mahasiswa Password
 app.put('/mahasiswa/reset-password/:id_mahasiswa', (req, res) => {
     const mhsId = req.params.id_mahasiswa;
@@ -671,6 +766,41 @@ app.put('/mahasiswa/reset-password/:id_mahasiswa', (req, res) => {
         res.json({ message: "Password berhasil direset menjadi 1234567!" });
     });
 });
+
+app.put('/mahasiswa/upload-image', uploadMahasiswaImage.single('image'), (req, res) => {
+    const { mahasiswa_id } = req.body;
+
+    if (!req.file) {
+        return res.status(400).json({ error: "File gambar tidak ditemukan." });
+    }
+
+    const newImageName = req.file.filename;
+
+    const getOldImageQuery = "SELECT mahasiswa_image FROM tb_mahasiswa WHERE id_mahasiswa = ?";
+    db.query(getOldImageQuery, [mahasiswa_id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const oldImageName = results.length > 0 ? results[0].mahasiswa_image : null;
+
+        if (oldImageName) {
+            const oldFilePath = path.join(mahasiswaImageDir, oldImageName);
+            if (fs.existsSync(oldFilePath)) {
+                fs.unlink(oldFilePath, (unlinkErr) => {
+                    if (unlinkErr) console.error("Gagal menghapus gambar lama:", unlinkErr);
+                    else console.log("Gambar lama dihapus:", oldImageName);
+                });
+            }
+        }
+
+        const updateQuery = "UPDATE tb_mahasiswa SET mahasiswa_image = ? WHERE id_mahasiswa = ?";
+        db.query(updateQuery, [newImageName, mahasiswa_id], (errUpdate) => {
+            if (errUpdate) return res.status(500).json({ error: errUpdate.message });
+            res.json({ message: "Foto profil berhasil diperbarui!", image: newImageName });
+        });
+    });
+});
+
+app.use('/images/mahasiswa', express.static(mahasiswaImageDir));
 
 // ================= PENELITIAN ENDPOINTS =================
 
@@ -704,7 +834,8 @@ app.get('/penelitian/dosen/:dosen_id', (req, res) => {
 });
 
 app.post('/penelitian', upload.array('files', 3), (req, res) => {
-    const { dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan } = req.body;
+    const { dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan , anggota} = req.body;
+    // let anggota_string = anggota ? JSON.stringify(anggota) : null;
 
     let hasilPublikasiJson = null;
     if (req.files && req.files.length > 0) {
@@ -712,20 +843,20 @@ app.post('/penelitian', upload.array('files', 3), (req, res) => {
     }
 
     const insertPenelitian = `
-        INSERT INTO tb_penelitian (dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasil_publikasi) 
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO tb_penelitian (dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, anggota, hasil_publikasi) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(insertPenelitian, [dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasilPublikasiJson], (err, result) => {
+    db.query(insertPenelitian, [dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, anggota, hasilPublikasiJson], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
 
         const newId = result.insertId;
 
         const insertLaporan = `
-            INSERT INTO tb_laporan (penelitian_id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasil_publikasi) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tb_laporan (penelitian_id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, anggota, hasil_publikasi) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        db.query(insertLaporan, [newId, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasilPublikasiJson], (err) => {
+        db.query(insertLaporan, [newId, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, anggota, hasilPublikasiJson], (err) => {
             if (err) console.error("Gagal insert history laporan:", err);
             res.json({ message: "Data berhasil disimpan!", id: newId });
         });
@@ -734,7 +865,7 @@ app.post('/penelitian', upload.array('files', 3), (req, res) => {
 
 app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
     const { id } = req.params;
-    const { status_penelitian, keterangan, existing_files } = req.body;
+    const { status_penelitian, keterangan, anggota, existing_files } = req.body;
 
     db.query("SELECT dosen_id, judul_penelitian, tahun_penelitian, hasil_publikasi FROM tb_penelitian WHERE id = ?", [id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -753,17 +884,17 @@ app.put('/penelitian/:id', upload.array('files', 3), (req, res) => {
 
         const updateQuery = `
             UPDATE tb_penelitian 
-            SET status_penelitian = ?, keterangan = ?, hasil_publikasi = ? 
+            SET status_penelitian = ?, keterangan = ?, anggota = ?, hasil_publikasi = ? 
             WHERE id = ?
         `;
-        db.query(updateQuery, [status_penelitian, keterangan, hasilPublikasiJson, id], (err) => {
+        db.query(updateQuery, [status_penelitian, keterangan, anggota, hasilPublikasiJson, id], (err) => {
             if (err) return res.status(500).json({ error: err.message });
 
             const logQuery = `
-                INSERT INTO tb_laporan (penelitian_id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasil_publikasi)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tb_laporan (penelitian_id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, anggota, hasil_publikasi)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
-            db.query(logQuery, [id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, hasilPublikasiJson], (errLog) => {
+            db.query(logQuery, [id, dosen_id, judul_penelitian, tahun_penelitian, status_penelitian, keterangan, anggota, hasilPublikasiJson], (errLog) => {
                 if (errLog) return res.status(500).json({ error: "Gagal membuat laporan update: " + errLog.message });
                 res.json({ message: "Data berhasil diupdate dan laporan baru dibuat!" });
             });

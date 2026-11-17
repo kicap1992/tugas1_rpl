@@ -7,6 +7,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 	<title>Aplikasi Penelitian Dosen - Profil Dosen</title>
 
+	<link rel="icon" href="assets/images/icon.png" type="image/x-icon">
+
 	<script>
 		(async function checkAuth() {
 			const dosenId = localStorage.getItem('dosen_id');
@@ -208,16 +210,29 @@
 			const dosenName = localStorage.getItem('dosen_name');
 			if (dosenName) document.getElementById('dosenName').textContent = dosenName;
 
-			// Fetch current profile image
-			$.get(`/api/dosen`, function (data) {
-				const dosen = data.find(d => d.dosen_id === dosenId);
-				if (dosen && dosen.dosen_image) {
-					const imgUrl = `/api/images/dosen/${dosen.dosen_image}`;
+			// Fetch current profile image using the FAST single-record API
+			if (dosenId) {
+				$.get(`/api/dosen/cek/${dosenId}`, function (dosen) {
+					console.log("Fetched dosen data:", dosen);
+					console.log("Dosen Image:", dosen.dosen_image);
+					if (dosen && dosen.dosen_image) {
+						const imgUrl = `/api/images/dosen/${dosen.dosen_image}?t=${new Date().getTime()}`;
+						$('#profileImagePreview').attr('src', imgUrl);
+						$('#foto_dosen').attr('src', imgUrl);
+					}
+				}).fail(function (xhr) {
+					console.error("Gagal memuat data dosen:", xhr.responseJSON?.error);
+					// If the ID is invalid, log them out
+					if (xhr.status === 404) {
+						swal("Sesi Berakhir", "Data dosen tidak ditemukan. Silakan login kembali.", "warning");
+						setTimeout(() => {
+							localStorage.clear();
+							window.location.href = 'index.html';
+						}, 2000);
+					}
+				});
+			}
 
-					$('#profileImagePreview').attr('src', imgUrl);
-					$('#foto_dosen').attr('src', imgUrl);
-				}
-			});
 		});
 
 		// ============ CHANGE PASSWORD AJAX ============

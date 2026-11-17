@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Laporan Penelitian Dosen</title>
+    <link rel="icon" href="assets/images/icon.png" type="image/x-icon">
     <style>
         /* Base Styles */
         body {
@@ -215,13 +216,14 @@
                 <th width="5%">No</th>
                 <th width="20%">Tanggal Update</th>
                 <th width="15%">Status</th>
+                <th width="15%">Anggota</th>
                 <th width="25%">Keterangan</th>
-                <th width="35%">File Publikasi</th>
+                <th width="20%">File Publikasi</th>
             </tr>
         </thead>
         <tbody id="printDataBody">
             <tr>
-                <td colspan="5" style="text-align: center;">Memuat data...</td>
+                <td colspan="6" style="text-align: center;">Memuat data...</td>
             </tr>
         </tbody>
     </table>
@@ -302,7 +304,7 @@
                 tbody.innerHTML = '';
 
                 if (data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tidak ada riwayat.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tidak ada riwayat.</td></tr>';
                     return;
                 }
 
@@ -327,6 +329,7 @@
                             <td style="text-align: center;">${index + 1}</td>
                             <td>${formatDateWIB(log.created_at)}</td>
                             <td style="text-align: center;">${log.status_penelitian}</td>
+                            <td>${log.anggota || '-'}</td>
                             <td>${log.keterangan || '-'}</td>
                             <td>${filesHtml}</td>
                         </tr>
@@ -335,7 +338,7 @@
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById('printDataBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Gagal memuat data.</td></tr>';
+                document.getElementById('printDataBody').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Gagal memuat data.</td></tr>';
             });
     </script>
 

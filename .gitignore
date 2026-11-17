@@ -7,3 +7,8 @@ be/uploads/*
 be/images/dosen/*
 # But do NOT ignore the .gitkeep file
 !be/images/dosen/.gitkeep
+
+# Ignore all files in uploads
+be/images/mahasiswa/*
+# But do NOT ignore the .gitkeep file
+!be/images/mahasiswa/.gitkeep
