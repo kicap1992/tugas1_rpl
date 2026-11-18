@@ -28,6 +28,69 @@
 			overflow: hidden; border-radius: 50%; vertical-align: middle;
 		}
 		.header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+		/* Inline login form styles (match original single-wrapper form) */
+		.login-inline .frm-input {
+			margin-bottom: 15px;
+			position: relative;
+		}
+		.login-inline .frm-inp {
+			width: 100%;
+			padding: 10px 15px 10px 40px;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			font-size: 14px;
+			height: 42px;
+		}
+		.login-inline .frm-inp:focus {
+			border-color: #2196F3;
+			outline: none;
+			box-shadow: 0 0 5px rgba(33,150,243,0.3);
+		}
+		.login-inline .frm-ico {
+			position: absolute;
+			left: 12px;
+			top: 13px;
+			color: #aaa;
+			font-size: 16px;
+		}
+		.login-inline .frm-submit {
+			display: block;
+			width: 100%;
+			background: #2196F3;
+			color: #fff;
+			border: none;
+			padding: 12px;
+			border-radius: 4px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: background 0.3s;
+		}
+		.login-inline .frm-submit:hover {
+			background: #0b7dda;
+		}
+		.login-inline .frm-submit:disabled {
+			background: #90caf9;
+			cursor: not-allowed;
+		}
+		.login-inline .a-link {
+			display: block;
+			text-align: center;
+			margin-top: 15px;
+			color: #2196F3;
+			font-size: 13px;
+			text-decoration: none;
+		}
+		.login-inline .a-link:hover {
+			text-decoration: underline;
+		}
+		.login-inline .frm-footer {
+			margin-top: 20px;
+			font-size: 12px;
+			color: #999;
+			line-height: 1.6;
+		}
 	</style>
 </head>
 
@@ -49,9 +112,9 @@
 					<li class="current">
 						<a class="waves-effect" href="index.html"><i class="menu-icon fa fa-home"></i><span>Halaman Utama</span></a>
 					</li>
-					<li>
+					<!-- <li>
 						<a class="waves-effect" href="login.html"><i class="menu-icon fa fa-sign-in"></i><span>Login</span></a>
-					</li>
+					</li> -->
 				</ul>
 			</div>
 		</div>
@@ -62,10 +125,10 @@
 			<button type="button" class="menu-mobile-button glyphicon glyphicon-menu-hamburger js__menu_mobile"></button>
 			<h1 class="page-title">Halaman Utama</h1>
 		</div>
-		<div class="pull-right">
+		<!-- <div class="pull-right">
 			<div class="ico-item fa fa-arrows-alt js__full_screen"></div>
-			<a href="login.html" class="ico-item fa fa-sign-in" title="Login"></a>
-		</div>
+			<a href="#" class="ico-item fa fa-sign-in" title="Login" id="navLoginBtn"></a>
+		</div> -->
 	</div>
 
 	<div id="wrapper">
@@ -113,7 +176,7 @@
 
 			<!-- CHART SECTION -->
 			<div class="row small-spacing">
-				<div class="col-lg-12 col-xs-12">
+				<div class="col-lg-7 col-xs-12">
 					<div class="box-content card">
 						<h4 class="box-title">Statistik Penelitian</h4>
 						<div class="card-content">
@@ -121,9 +184,17 @@
 						</div>
 					</div>
 				</div>
+				<div class="col-lg-5 col-xs-12">
+					<div class="box-content card">
+						<h4 class="box-title">Last Updated</h4>
+						<div class="card-content" id="lastUpdateContainer">
+							<p class="text-center text-muted">Memuat data...</p>
+						</div>
+					</div>
+				</div>
 			</div>
 
-			<!-- INFO AND LAST UPDATE -->
+			<!-- INFO AND INLINE LOGIN -->
 			<div class="row small-spacing">
 				<div class="col-lg-7 col-xs-12">
 					<div class="box-content card">
@@ -135,16 +206,27 @@
 								semua penelitian yang dilakukan oleh dosen. Dosen dan mahasiswa wajib login untuk
 								mengakses sistem ini. Jika tidak memiliki akun, silahkan hubungi admin terlebih dahulu.</p>
 							
-							<br>
-							<a href="login.html" class="btn btn-primary"><i class="fa fa-sign-in"></i> Login Sekarang</a>
 						</div>
 					</div>
 				</div>
 				<div class="col-lg-5 col-xs-12">
-					<div class="box-content card">
-						<h4 class="box-title">Last Updated</h4>
-						<div class="card-content" id="lastUpdateContainer">
-							<p class="text-center text-muted">Memuat data...</p>
+					<div class="box-content card" id="inlineLogin">
+						<h4 class="box-title">Login Form</h4>
+						<div class="card-content">
+							<!-- Inline login form (moved from login.html) -->
+							<form id="loginForm" class="login-inline">
+								<div class="frm-input">
+									<input type="text" placeholder="Username / Dosen ID" class="frm-inp" id="username">
+									<i class="fa fa-user frm-ico"></i>
+								</div>
+								<div class="frm-input">
+									<input type="password" placeholder="Password" class="frm-inp" id="password">
+									<i class="fa fa-lock frm-ico"></i>
+								</div>
+								<button type="submit" id="login_btn" class="frm-submit">Login <i class="fa fa-arrow-circle-right"></i></button>
+								<a href="#" class="a-link" id="backToTopLink"><i class="fa fa-arrow-circle-up"></i> Kembali ke atas</a>
+								<div class="frm-footer text-center">Sistem Penelitian Dosen <br> Universitas Handayani Makassar. <br> Copyright &copy; 2026</div>
+							</form>
 						</div>
 					</div>
 				</div>
@@ -286,6 +368,82 @@
 
 			// 3. Render Chart
 			renderChart();
+
+			// 4. Login form handler (moved from login.html)
+			document.getElementById('loginForm').addEventListener('submit', async function (e) {
+				e.preventDefault();
+
+				const user = document.getElementById('username').value.trim();
+				const pass = document.getElementById('password').value.trim();
+				const btn = document.getElementById('login_btn');
+
+				if (!user || !pass) {
+					alert('Harap isi username dan password!');
+					return;
+				}
+
+				// Show loading state
+				const originalText = btn.innerHTML;
+				btn.innerHTML = 'Loading... <i class="fa fa-spinner fa-spin"></i>';
+				btn.disabled = true;
+
+				try {
+					// Send request to backend
+					const response = await fetch('/api/login', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ username: user, password: pass })
+					});
+
+					const data = await response.json();
+					console.log('Login response:', data);
+
+					if (response.ok && data.success) {
+						// Clear previous auth data
+						localStorage.clear();
+
+						if (data.role === 'admin') {
+							localStorage.setItem('admin_auth', 'true');
+							window.location.href = 'admin_index.html';
+						} else if (data.role === 'dosen') {
+							localStorage.setItem('dosen_id', data.dosen_id);
+							localStorage.setItem('dosen_name', data.dosen_name);
+							window.location.href = 'dosen_index.html';
+						} else if (data.role === 'mahasiswa') {
+							localStorage.setItem('id_mahasiswa', data.id_mahasiswa);
+							localStorage.setItem('nama_mahasiswa', data.nama_mahasiswa);
+							window.location.href = 'mahasiswa_index.html';
+						} 
+					} else {
+						alert(data.message || 'Login gagal!');
+						document.getElementById('password').value = '';
+					}
+				} catch (error) {
+					console.error('Error:', error);
+					alert('Terjadi kesalahan pada server.');
+				} finally {
+					// Restore button state
+					btn.innerHTML = originalText;
+					btn.disabled = false;
+				}
+			});
+
+			// 5. Smooth scroll for "Login Sekarang" button and nav login icon
+			document.getElementById('scrollToLoginBtn').addEventListener('click', function(e) {
+				e.preventDefault();
+				document.getElementById('inlineLogin').scrollIntoView({ behavior: 'smooth', block: 'center' });
+			});
+
+			document.getElementById('navLoginBtn').addEventListener('click', function(e) {
+				e.preventDefault();
+				document.getElementById('inlineLogin').scrollIntoView({ behavior: 'smooth', block: 'center' });
+			});
+
+			// 6. "Kembali ke atas" link inside form
+			document.getElementById('backToTopLink').addEventListener('click', function(e) {
+				e.preventDefault();
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			});
 		});
 	</script>
 </body>
